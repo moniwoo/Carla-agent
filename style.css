@@ -213,3 +213,66 @@ textarea:focus, input:focus, select:focus {
   .sidebar { display: none; }
   .row-gap { grid-template-columns: 1fr; }
 }
+/* Caja de resultados con diseño elegante y visual */
+.result-html-box {
+  background-color: #ffffff !important;
+  color: #1e293b !important;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 1.5rem;
+  font-family: 'Inter', sans-serif;
+  line-height: 1.6;
+  font-size: 0.95rem;
+  max-height: 500px;
+  overflow-y: auto;
+  text-align: left;
+}
+
+/* Encabezados dentro de la respuesta */
+.result-html-box h3 {
+  font-size: 1.25rem;
+  color: #0f172a;
+  margin-top: 1.25rem;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  border-bottom: 2px solid #f1f5f9;
+  padding-bottom: 0.25rem;
+}
+
+.result-html-box h4 {
+  font-size: 1.05rem;
+  color: #334155;
+  margin-top: 1rem;
+  margin-bottom: 0.35rem;
+  font-weight: 600;
+}
+
+/* Listas y elementos */
+.result-html-box ul, .result-html-box ol {
+  margin-left: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.result-html-box li {
+  margin-bottom: 0.4rem;
+}
+
+/* Gráficos simulados con CSS */
+.stats-chart-mock {
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 6px;
+  padding: 1rem;
+  margin: 1rem 0;
+}
+
+.chart-bar-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  font-size: 0.85rem;
+}
+.chart-label { width: 30%; font-weight: 500; }
+.chart-bar-wrapper { width: 55%; background: #e2e8f0; border-radius: 4px; height: 16px; margin: 0 10px; overflow: hidden; }
+.chart-bar-fill { background: #059669; height: 100%; border-radius: 4px; }
+.chart-value { width: 15%; font-weight: 600; text-align: right; }

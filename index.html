@@ -14,10 +14,10 @@
 <div id="api-overlay" class="overlay">
   <div class="overlay-card">
     <div class="overlay-logo">CARLA.agent</div>
-    <p class="overlay-sub">Introduce tu API key de Anthropic para empezar</p>
-    <input type="password" id="api-key-input" placeholder="sk-ant-..." />
+    <p class="overlay-sub">Introduce tu API key de Gemini (Google AI Studio) para empezar</p>
+    <input type="password" id="api-key-input" placeholder="AIzaSy..." />
     <button class="btn btn-primary" onclick="saveKey()">Acceder</button>
-    <a href="https://console.anthropic.com/settings/keys" target="_blank" class="overlay-link">¿Cómo obtengo mi API key? →</a>
+    <a href="https://aistudio.google.com/" target="_blank" class="overlay-link">¿Cómo obtengo mi API key de Gemini? →</a>
   </div>
 </div>
 
@@ -25,7 +25,7 @@
   <div class="sidebar">
     <div class="logo">
       <div class="logo-title">CARLA.agent</div>
-      <div class="logo-sub">Moni · Ingeniería & IA</div>
+      <div class="logo-sub">Moni · Mecánica & IA</div>
     </div>
     <div class="nav-item active" data-panel="post" onclick="switchPanel('post', this)">
       <i class="ti ti-edit"></i> Redactar post
@@ -38,6 +38,9 @@
     </div>
     <div class="nav-item" data-panel="tracking" onclick="switchPanel('tracking', this)">
       <i class="ti ti-building"></i> Seguimiento
+    </div>
+    <div class="nav-item" data-panel="study" onclick="switchPanel('study', this)">
+      <i class="ti ti-school"></i> Estudio técnico
     </div>
     <div class="sidebar-footer">
       <button class="btn-ghost" onclick="clearKey()"><i class="ti ti-logout"></i> Cerrar sesión</button>
@@ -54,11 +57,10 @@
 
     <div class="content">
 
-      <!-- POST -->
       <div class="panel active" id="panel-post">
         <div class="card">
           <div class="card-label">Tu idea o nota</div>
-          <textarea id="post-idea" placeholder="Ej: Estuve en ADM Sevilla y me sorprendió cómo las startups de drones están cambiando la lógica de la defensa..."></textarea>
+          <textarea id="post-idea" placeholder="Ej: Estuve analizando el coeficiente de resistencia aerodinámica en perfiles NACA y cómo la IA puede optimizar la capa límite..."></textarea>
           <div class="row-gap">
             <div>
               <div class="card-label">Tono</div>
@@ -90,7 +92,6 @@
         </div>
       </div>
 
-      <!-- TRENDS -->
       <div class="panel hidden" id="panel-trends">
         <div class="card">
           <div class="card-label">Sectores monitorizados</div>
@@ -120,7 +121,6 @@
         </div>
       </div>
 
-      <!-- EVENTS -->
       <div class="panel hidden" id="panel-events">
         <div class="card">
           <div class="row-gap">
@@ -142,7 +142,7 @@
             </div>
           </div>
           <div class="card-label" style="margin-top:0.75rem">Tema específico (opcional)</div>
-          <input type="text" id="events-focus" placeholder="Ej: defensa, sostenibilidad, visión artificial..." />
+          <input type="text" id="events-focus" placeholder="Ej: defensa, aeroespacial, visión artificial..." />
           <div style="height:0.75rem"></div>
           <button class="btn btn-primary" onclick="getEvents()"><i class="ti ti-calendar-search"></i> Buscar eventos</button>
         </div>
@@ -155,7 +155,6 @@
         </div>
       </div>
 
-      <!-- TRACKING -->
       <div class="panel hidden" id="panel-tracking">
         <div class="card">
           <div class="card-label">Empresas en seguimiento</div>
@@ -167,7 +166,7 @@
         </div>
         <div class="card">
           <div class="card-label">Generar informe</div>
-          <p class="muted">El agente buscará noticias recientes, movimientos de recruiters y oportunidades de las empresas en tu lista.</p>
+          <p class="muted">CARLA buscará noticias recientes, movimientos y oportunidades de las empresas en tu lista.</p>
           <div style="height:0.75rem"></div>
           <button class="btn btn-primary" onclick="getTracking()"><i class="ti ti-report-analytics"></i> Generar informe</button>
         </div>
@@ -177,6 +176,43 @@
           <div class="btn-row">
             <button class="btn" onclick="copyText('tracking-output')"><i class="ti ti-copy"></i> Copiar</button>
             <button class="btn btn-primary" onclick="trackingToPost()"><i class="ti ti-edit"></i> Generar post</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel hidden" id="panel-study">
+        <div class="card">
+          <div class="card-label">Material de la asignatura (Apuntes o Guía PDF)</div>
+          <input type="file" id="study-material" accept="application/pdf,image/*" />
+          
+          <div class="card-label" style="margin-top:0.5rem">Modelo de Examen Antiguo (PDF o Imagen de examen previo)</div>
+          <input type="file" id="study-exam" accept="application/pdf,image/*" />
+
+          <div class="row-gap" style="margin-top:0.5rem">
+            <div>
+              <div class="card-label">Tipo de simulación</div>
+              <select id="study-type">
+                <option value="examen_completo">Examen Completo con Solucionario</option>
+                <option value="test">Batería de Preguntas de Test Explicadas</option>
+                <option value="problema_desarrollado">Problema Práctico Desglosado Paso a Paso</option>
+              </select>
+            </div>
+            <div>
+              <div class="card-label">Nivel de Dificultad</div>
+              <select id="study-difficulty">
+                <option value="similar">Idéntico al examen adjunto</option>
+                <option value="reto">Un paso más complejo (Nivel Reto)</option>
+              </select>
+            </div>
+          </div>
+          <div style="height:0.5rem"></div>
+          <button class="btn btn-primary" onclick="generateStudyMaterial()"><i class="ti ti-school"></i> Generar material de estudio</button>
+        </div>
+        <div id="study-result" class="card hidden">
+          <div class="card-label">Material académico generado por CARLA</div>
+          <div class="result-box" id="study-output" style="font-family: monospace; overflow-x: auto;"></div>
+          <div class="btn-row">
+            <button class="btn" onclick="copyText('study-output')"><i class="ti ti-copy"></i> Copiar todo</button>
           </div>
         </div>
       </div>

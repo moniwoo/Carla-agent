@@ -98,21 +98,26 @@ async function callGemini(promptText, outputElementId, resultCardId) {
   if (outputBox) outputBox.innerHTML = "<div class='loading-box'>✨ Emilia está pensando y procesando los datos...</div>";
 
   try {
-    // URL actualizada a la API oficial v1 con el modelo estable
-const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {      
-  method: "POST",    
-  headers: { "Content-Type": "application/json" },
+    const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + apiKey;
+
+    // Forzamos explícitamente el método POST con mayúsculas y limpiamos la estructura
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { 
+        "Content-Type": "application/json" 
+      },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: promptText }] }]
+        contents: [{ 
+          parts: [{ text: promptText }] 
+        }]
       })
     });
 
     const data = await response.json();
     
-    // Si la API devuelve un error estructurado, lo capturamos aquí
     if (data.error) {
       console.error("Error de la API de Google:", data.error);
-      if (outputBox) outputBox.innerHTML = `Error de Google: ${data.error.message}`;
+      if (outputBox) outputBox.innerHTML = "Error de Google: " + data.error.message;
       return;
     }
 
@@ -123,7 +128,7 @@ const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/m
       responseText = responseText.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
       if (outputBox) outputBox.innerHTML = responseText;
     } else {
-      if (outputBox) outputBox.innerHTML = "Error: No se recibió una respuesta válida de Gemini. Revisa el formato de tu clave.";
+      if (outputBox) outputBox.innerHTML = "Error: No se recibió una respuesta válida de Gemini.";
     }
   } catch (error) {
     console.error("Error en la petición:", error);

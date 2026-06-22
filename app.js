@@ -11,7 +11,6 @@ function saveKey() {
   if (!input) return;
   
   const key = input.value.trim();
-  // Guarda cualquier clave válida sin filtros obsoletos
   if (key.length > 10) {
     localStorage.setItem('my-carla-gemini-key', key);
     launchApp();
@@ -32,13 +31,10 @@ function launchApp() {
   if (overlay) overlay.style.display = 'none';
   if (appContainer) appContainer.style.display = 'flex';
   
-  // Inicializaciones seguras
-  try {
-    if (typeof initCompanies === 'function') initCompanies();
-  } catch (e) { console.warn(e); }
+  // Cargamos las empresas guardadas al arrancar
+  initCompanies();
 }
 
-// Al cargar la página, comprueba si ya estabas dentro
 window.addEventListener('DOMContentLoaded', () => {
   const key = getKey();
   if (key) {
@@ -86,22 +82,162 @@ function navigateToPanel(panelId) {
 }
 
 // ==========================================
-// 3. FUNCIONES DE LOS BOTONES (PLACEHOLDERS)
+// 3. LLAMADA REAL A LA API DE GEMINI
 // ==========================================
 
-function generatePost() { alert("Conectando con Emilia para redactar tu post..."); }
-function getTrends() { alert("Buscando tendencias del mercado..."); }
-function trendToPost() { alert("Transformando tendencia en borrador..."); }
-function getEvents() { alert("Escaneando eventos técnicos..."); }
-function initCompanies() { console.log("Lista de empresas inicializada."); }
-function addCompany() { console.log("Empresa añadida."); }
-function getTracking() { alert("Generando informe de seguimiento..."); }
-function trackingToPost() { alert("Convirtiendo informe en post..."); }
-function generateStudyMaterial() { alert("Emilia está procesando el material de examen..."); }
+async function callGemini(promptText, outputElementId, resultCardId) {
+  const apiKey = getKey();
+  const outputBox = document.getElementById(outputElementId);
+  const resultCard = document.getElementById(resultCardId);
+  
+  if (!apiKey) {
+    alert("Falta la API Key. Por favor, inicia sesión de nuevo.");
+    return;
+  }
+  
+  if (resultCard) resultCard.classList.remove('hidden');
+  if (outputBox) outputBox.innerHTML = "<div class='loading-box'>✨ Emilia está pensando y procesando los datos...</div>";
+
+  try {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: promptText }] }]
+      })
+    });
+
+    const data = await response.json();
+    if (data.candidates && data.candidates[0].content.parts[0].text) {
+      let responseText = data.candidates[0].content.parts[0].text;
+      
+      // Formateo rápido para saltos de línea y negritas en el cuadro
+      responseText = responseText.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+      if (outputBox) outputBox.innerHTML = responseText;
+    } else {
+      if (outputBox) outputBox.innerHTML = "Error: No se recibió una respuesta válida de Gemini. Revisa tu API Key.";
+    }
+  } catch (error) {
+    console.error(error);
+    if (outputBox) outputBox.innerHTML = "Hubo un error al conectar con Emilia. Inténtalo de nuevo.";
+  }
+}
+
+// ==========================================
+// 4. FUNCIONES DE EMILIA ACTICADAS
+// ==========================================
+
+function generatePost() {
+  const idea = document.getElementById('post-idea').value;
+  const tone = document.getElementById('post-tone').value;
+  const length = document.getElementById('post-length').value;
+  
+  if (!idea) {
+    alert("Por favor, escribe una idea o nota primero.");
+    return;
+  }
+  
+  const prompt = `Actúa como una mentora experta en ingeniería y comunicación llamada Emilia. Redacta un post para LinkedIn basado en esta idea: "${idea}". El tono debe ser ${tone} y la longitud debe ser de tamaño ${length}. No añadas introducciones innecesarias, ve directo al grano.`;
+  
+  callGemini(prompt, 'post-output', 'post-result');
+}
+
+function getTrends() {
+  const focus = document.getElementById('trends-focus').value || "general";
+  const period = document.getElementById('trends-period').value;
+  
+  const prompt = `Analiza las tendencias más recientes en tecnología, ingeniería avanzada e Inteligencia Artificial aplicadas, enfocándote especialmente en: "${focus}" para el periodo del ${period}. Genera un informe estructurado con viñetas claras.`;
+  
+  callGemini(prompt, 'trends-output', 'trends-result');
+}
+
+function getEvents() {
+  const country = document.getElementById('events-country').value;
+  const region = document.getElementById('events-region').value;
+  const horizon = document.getElementById('events-horizon').value;
+  const focus = document.getElementById('events-focus').value || "tecnología e ingeniería";
+  
+  const prompt = `Busca y genera un listado de eventos de ingeniería, congresos técnicos o ferias tecnológicas clave en ${country} (Región: ${region}) planeados para los próximos ${horizon}. Enfócate en la temática: ${focus}. Organízalo en formato de lista clara con fechas estimadas si es posible.`;
+  
+  callGemini(prompt, 'events-output', 'events-result');
+}
+
+function generateStudyMaterial() {
+  const type = document.getElementById('study-type').value;
+  const difficulty = document.getElementById('study-difficulty').value;
+  
+  const prompt = `Como Emilia, tu mentora académica de ingeniería avanzada, genera un recurso de estudio de tipo "${type}" con un nivel de dificultad "${difficulty}" enfocado en materias complejas de ingeniería (como cálculo numérico, estructuras de edificación o análisis de circuitos). Proporciona un desarrollo limpio, claro y detallado paso a paso.`;
+  
+  callGemini(prompt, 'study-output', 'study-result');
+}
+
+// ==========================================
+// 5. GESTIÓN COHESIVA DE SEGUIMIENTO (EMPRESAS)
+// ==========================================
+
+let companies = [];
+
+function initCompanies() {
+  const stored = localStorage.getItem('emilia-companies');
+  if (stored) {
+    companies = JSON.parse(stored);
+  } else {
+    companies = ["Navantia", "General Dynamics", "Airbus"]; // Valores iniciales por defecto
+  }
+  renderCompanies();
+}
+
+function renderCompanies() {
+  const listContainer = document.getElementById('company-list');
+  if (!listContainer) return;
+  
+  listContainer.innerHTML = '';
+  companies.forEach((company, index) => {
+    const tag = document.createElement('span');
+    tag.className = 'tag';
+    tag.innerHTML = `${company} <i class="ti ti-x" onclick="removeCompany(${index})" style="cursor:pointer; margin-left:5px;"></i>`;
+    listContainer.appendChild(tag);
+  });
+}
+
+function addCompany() {
+  const input = document.getElementById('new-company');
+  if (!input) return;
+  
+  const name = input.value.trim();
+  if (name && !companies.includes(name)) {
+    companies.push(name);
+    localStorage.setItem('emilia-companies', JSON.stringify(companies));
+    renderCompanies();
+    input.value = '';
+  }
+}
+
+function removeCompany(index) {
+  companies.splice(index, 1);
+  localStorage.setItem('emilia-companies', JSON.stringify(companies));
+  renderCompanies();
+}
+
+function getTracking() {
+  const focus = document.getElementById('tracking-focus').value || "vacantes abiertas";
+  if (companies.length === 0) {
+    alert("Añade al menos una empresa al seguimiento.");
+    return;
+  }
+  
+  const prompt = `Genera un informe estratégico de seguimiento sobre el estado actual del mercado, ofertas de empleo, adjudicaciones públicas o contratos recientes para el siguiente listado de empresas: ${companies.join(', ')}. Concéntrate en este objetivo: "${focus}".`;
+  
+  callGemini(prompt, 'tracking-output', 'tracking-result');
+}
+
+// ==========================================
+// 6. UTILIDADES
+// ==========================================
 
 function copyText(elementId) {
   const element = document.getElementById(elementId);
   if (!element) return;
   const text = element.innerText || element.value;
-  navigator.clipboard.writeText(text).then(() => alert('¡Copiado!'));
+  navigator.clipboard.writeText(text).then(() => alert('¡Texto copiado al portapapeles!'));
 }

@@ -276,3 +276,153 @@ textarea:focus, input:focus, select:focus {
 .chart-bar-wrapper { width: 55%; background: #e2e8f0; border-radius: 4px; height: 16px; margin: 0 10px; overflow: hidden; }
 .chart-bar-fill { background: #059669; height: 100%; border-radius: 4px; }
 .chart-value { width: 15%; font-weight: 600; text-align: right; }
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  /* Paleta Magenta/Rosa inspirada en CARLA */
+  --bg: #fdf6f8; /* Un fondo con un sutil tinte rosáceo muy limpio */
+  --surface: rgba(255, 255, 255, 0.85); /* Superficies translúcidas */
+  --border: rgba(219, 39, 119, 0.15);
+  --border-med: rgba(219, 39, 119, 0.3);
+  --text: #1e1116; /* Un gris muy oscuro con matiz cálido */
+  --text-muted: #856975;
+  
+  /* El magenta base de la imagen (Pink/Magenta potente pero elegante) */
+  --accent: #db2777; 
+  --accent-dark: #9d174d;
+  /* Tonos más claros y pasteles para botones secundarios para no cansar la vista */
+  --accent-light: #fce7f3;
+  --accent-border: #fbcfe8;
+  
+  --radius: 14px;
+  --radius-sm: 8px;
+}
+
+/* FONDO ETÉREO DIFUMINADO EN TODA LA APP */
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--bg);
+  /* Degradados radiales gigantes de fondo para simular nubes de color difuminadas (Estilo Gemini) */
+  background-image: 
+    radial-gradient(at 0% 0%, rgba(251, 207, 232, 0.4) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(244, 63, 94, 0.15) 0px, transparent 50%),
+    radial-gradient(at 50% 100%, rgba(219, 39, 119, 0.1) 0px, transparent 50%);
+  color: var(--text);
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Efecto cristal para la barra lateral y tarjetas */
+.sidebar {
+  background: rgba(255, 255, 255, 0.6) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-right: 1px solid var(--border);
+}
+
+.card {
+  background: var(--surface) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border) !important;
+  box-shadow: 0 4px 20px rgba(219, 39, 119, 0.03);
+}
+
+/* Ajuste de botones para que sean más suaves a la vista */
+.btn {
+  background: var(--accent-light) !important;
+  color: var(--accent-dark) !important;
+  border: 1px solid var(--accent-border) !important;
+  font-weight: 500;
+}
+.btn:hover {
+  background: var(--accent-border) !important;
+}
+
+.btn-primary {
+  background: var(--accent) !important;
+  color: white !important;
+  border: none !important;
+  box-shadow: 0 4px 12px rgba(219, 39, 119, 0.2);
+}
+.btn-primary:hover {
+  background: var(--accent-dark) !important;
+}
+
+.nav-item.active {
+  background: var(--accent-light) !important;
+  color: var(--accent-dark) !important;
+  font-weight: 600;
+}
+
+/* DISEÑO PANTALLA DE BIENVENIDA ESTILO GEMINI */
+.welcome-container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 3rem 1.5rem;
+  max-width: 800px;
+  animation: fadeIn 0.8s ease-out;
+}
+
+.welcome-title {
+  font-size: 3rem;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  margin-bottom: 0.5rem;
+  /* Texto degradado con los colores de CARLA */
+  background: linear-gradient(135deg, #db2777 0%, #f43f5e 50%, #ae2012 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.welcome-sub {
+  font-size: 1.35rem;
+  color: var(--text-muted);
+  margin-bottom: 2.5rem;
+  font-weight: 400;
+}
+
+.welcome-suggestions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+  width: 100%;
+}
+
+.suggestion-card {
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 1.25rem;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  transition: all 0.25s ease;
+}
+
+.suggestion-card:hover {
+  background: #ffffff;
+  border-color: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(219, 39, 119, 0.06);
+}
+
+.suggestion-card i {
+  font-size: 1.5rem;
+  color: var(--accent);
+}
+
+.suggestion-card span {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--text);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}

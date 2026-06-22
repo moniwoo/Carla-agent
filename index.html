@@ -1,3 +1,22 @@
+<div class="content">
+
+      <div id="welcome-screen" class="welcome-container">
+        <h1 class="welcome-title"><span id="welcome-greeting">¡Hola, Moni!</span></h1>
+        <p class="welcome-sub" id="welcome-message">Qué alegría verte de nuevo. ¿Qué vamos a diseñar u optimizar hoy?</p>
+        
+        <div class="welcome-suggestions">
+          <div class="suggestion-card" onclick="switchPanel('post', document.querySelector('[data-panel=\'post\']'))">
+            <i class="ti ti-edit"></i>
+            <span>Redactar un nuevo post para LinkedIn con tu voz</span>
+          </div>
+          <div class="suggestion-card" onclick="switchPanel('study', document.querySelector('[data-panel=\'study\']'))">
+            <i class="ti ti-school"></i>
+            <span>Generar un simulacro de examen técnico</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel hidden" id="panel-post">
 <!DOCTYPE html>
 <html lang="es">
 <head>

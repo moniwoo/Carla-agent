@@ -1,23 +1,23 @@
 // ── API KEY MANAGEMENT ──────────────────────────────────────────────────────
 function saveKey() {
   const key = document.getElementById('api-key-input').value.trim();
-  if (!key.startsWith('sk-ant-')) {
-    alert('La API key debe empezar por sk-ant-');
+  if (!key) {
+    alert('Por favor, introduce tu API key de Gemini.');
     return;
   }
-  localStorage.setItem('anthropic_key', key);
+  localStorage.setItem('gemini_key', key);
   document.getElementById('api-overlay').style.display = 'none';
   document.getElementById('app').style.display = 'flex';
   initCompanies();
 }
 
 function clearKey() {
-  localStorage.removeItem('anthropic_key');
+  localStorage.removeItem('gemini_key');
   location.reload();
 }
 
 function getKey() {
-  return localStorage.getItem('anthropic_key');
+  return localStorage.getItem('gemini_key');
 }
 
 // ── INIT ─────────────────────────────────────────────────────────────────────
@@ -35,7 +35,8 @@ const PANEL_META = {
   post:     { title: 'Redactar post',          sub: 'Convierte una idea en un post con tu voz' },
   trends:   { title: 'Tendencias del sector',  sub: 'Novedades en ingeniería aeroespacial e IA' },
   events:   { title: 'Eventos de interés',     sub: 'Conferencias y meetups relevantes para tu perfil' },
-  tracking: { title: 'Seguimiento de empresas', sub: 'Novedades y oportunidades en tus empresas objetivo' }
+  tracking: { title: 'Seguimiento de empresas', sub: 'Novedades y oportunidades en tus empresas objetivo' },
+  study:    { title: 'Estudio técnico',        sub: 'Generación didáctica de exámenes y solucionarios estructurados' }
 };
 
 function switchPanel(id, el) {
@@ -49,40 +50,77 @@ function switchPanel(id, el) {
   document.getElementById('topbar-sub').textContent = PANEL_META[id].sub;
 }
 
-// ── CLAUDE API ────────────────────────────────────────────────────────────────
-async function callClaude(systemPrompt, userPrompt) {
+// ── GEMINI API CONNECTOR ──────────────────────────────────────────────────────
+async function callGemini(systemPrompt, userPrompt, inlineFiles = []) {
   const key = getKey();
+  if (!key) throw new Error('No se ha encontrado la clave de API.');
+
+  // Construcción del cuerpo según la especificación oficial de Gemini API
+  const contentsParts = [];
+  
+  // Añadimos archivos adjuntos si existen en formato { mimeType, data }
+  inlineFiles.forEach(file => {
+    contentsParts.push({
+      inlineData: {
+        mimeType: file.mimeType,
+        data: file.data
+      }
+    });
+  });
+
+  // Añadimos el prompt de usuario
+  contentsParts.push({ text: userPrompt });
+
   const body = {
-    model: 'claude-sonnet-4-6',
-    max_tokens: 1000,
-    system: systemPrompt,
-    messages: [{ role: 'user', content: userPrompt }],
-    tools: [{ type: 'web_search_20250305', name: 'web_search' }]
+    contents: [{ parts: contentsParts }],
+    systemInstruction: {
+      parts: [{ text: systemPrompt }]
+    }
   };
 
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
+  // Usamos el endpoint oficial para gemini-2.5-flash
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`;
+
+  const res = await fetch(url, {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': key,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true'
+      'Content-Type': 'application/json'
     },
     body: JSON.stringify(body)
   });
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.error?.message || 'Error en la API');
+    throw new Error(err.error?.message || 'Error de comunicación con la API de Gemini');
   }
 
   const data = await res.json();
-  return data.content.filter(b => b.type === 'text').map(b => b.text).join('\n').trim();
+  try {
+    return data.candidates[0].content.parts[0].text;
+  } catch (e) {
+    throw new Error('La respuesta del modelo no contiene una estructura de texto válida.');
+  }
+}
+
+// ── FILE HELPER (CONVERT TO BASE64) ──────────────────────────────────────────
+function fileToGenerativePart(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64Data = reader.result.split(',')[1];
+      resolve({
+        mimeType: file.type,
+        data: base64Data
+      });
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 }
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
 function showLoading(outputId, resultId) {
-  document.getElementById(outputId).innerHTML = '<span class="loading-text">Buscando y procesando... puede tardar unos segundos.</span>';
+  document.getElementById(outputId).innerHTML = '<span class="loading-text">CARLA está procesando tu solicitud... Esto se puede demorar unos segundos.</span>';
   document.getElementById(resultId).classList.remove('hidden');
   document.getElementById(resultId).style.display = 'flex';
 }
@@ -111,17 +149,14 @@ async function generatePost() {
 
   showLoading('post-output', 'post-result');
 
-  const system = `Eres el asistente de LinkedIn de Moni, ingeniera mecánica y aeroespacial en Sevilla, estudiante de Máster en Visión Artificial, miembro de EYE (European YOUng Engineers), con interés en aerospace, IA, drones, defensa y sostenibilidad.
+  const system = `Eres CARLA.agent, la asistente e inteligente aliada de LinkedIn de Moni, estudiante de ingenieria mecánica en Sevilla. Moni ha cursado un master en Ingenieria aerosespacial y cursa un máster en Visión Artificial y es miembro de EYE, European Young Engineers. Tienes un profundo interés por aerospace, IA, drones, defensa, emprendimiento y la sostenibilidad.
+Redactas posts profesionales optimizados para LinkedIn en su voz exacta: directa, contundente, estructurada con saltos de línea estratégicos, apertura de alto impacto, sin halagos corporativos empalagosos y con un máximo de 1-2 emojis contextuales. En español y a veces en inglés.
 
-Redactas posts en su voz: directa, profesional, sin relleno, tono de igual a igual entre profesionales, frases cortas y contundentes, apertura fuerte (primera frase engancha), perspectiva propia e independiente, cierre proyectivo y ambicioso. Sin halagos a empresas. Sin repetir ideas en el post. Sin emojis excesivos (máximo 1-2 si encajan). En español.
-
-Tono solicitado: ${tone}
-Longitud: ${length}
-
-Devuelve solo el texto del post, listo para publicar. Sin explicaciones adicionales.`;
+Tono requerido: ${tone}
+Extensión estimada: ${length}`;
 
   try {
-    const result = await callClaude(system, `Redacta un post de LinkedIn sobre: ${idea}`);
+    const result = await callGemini(system, `Genera el post definitivo basándote en esta nota o idea: ${idea}`);
     document.getElementById('post-output').textContent = result;
   } catch (e) {
     showError('post-output', e.message);
@@ -134,16 +169,12 @@ async function getTrends() {
 
   const extra = document.getElementById('trends-extra').value.trim();
   const period = document.getElementById('trends-period').value;
-  const topics = 'Aerospace, defensa, drones UAS, inteligencia artificial aplicada, digital twins, visión artificial' + (extra ? ', ' + extra : '');
+  const topics = 'Ingeniería aeroespacial, defensa, drones UAS avanzados, IA aplicada, gemelos digitales y Computer Vision' + (extra ? ', ' + extra : '');
 
-  const system = `Eres un analista de tendencias para Moni, ingeniera aeroespacial con interés en IA, drones y defensa. Busca en internet las noticias más relevantes y devuelve un resumen estructurado con:
-- Los 4-5 temas más emergentes del periodo
-- Una frase de por qué importa cada uno
-- Una nota de impacto en el sector aeroespacial o de IA
-En español, directo, sin relleno. Formato limpio con separación clara entre temas.`;
+  const system = `Eres CARLA.agent, analista técnica sénior. Tu tarea es estructurar un informe claro, analítico y conciso sobre las tendencias tecnológicas globales en la última ${period}. Formatea el texto limpiamente usando viñetas e incluye secciones de impacto en sectores clave en idioma español de España.`;
 
   try {
-    const result = await callClaude(system, `Dame un resumen de tendencias de la ${period} en: ${topics}`);
+    const result = await callGemini(system, `Analiza las tendencias más urgentes y relevantes en los campos de: ${topics}`);
     document.getElementById('trends-output').textContent = result;
   } catch (e) {
     showError('trends-output', e.message);
@@ -164,16 +195,12 @@ async function getEvents() {
   const horizon = document.getElementById('events-horizon').value;
   const focus = document.getElementById('events-focus').value.trim();
 
-  const system = `Busca en internet eventos, conferencias, ferias y meetups relevantes para Moni, ingeniera aeroespacial con interés en IA, drones, defensa, visión artificial y sostenibilidad. Devuelve una lista con:
-- Nombre del evento
-- Fecha aproximada y lugar
-- Por qué es relevante para su perfil
-En español. Formato limpio. Prioriza eventos con networking o presencia de empresas del sector.`;
+  const system = `Eres CARLA.agent, mentora de carrera en ingeniería. Lista ferias de empleo, charlas de emprendimiento, congresos de aeronáutica, defensa, robótica e inteligencia artificial. Devuelve una lista organizada por fechas que detone el nombre del evento, la localización exacta y el valor técnico o de networking que aporta a un perfil de ingeniería avanzada. Idioma español.`;
 
-  const query = `Eventos y conferencias de ingeniería aeroespacial, defensa e IA en ${geo} en los ${horizon}${focus ? ' con enfoque en ' + focus : ''}`;
+  const query = `Eventos, hackatones o conferencias de alta ingeniería y tecnología en ${geo} planificados para los próximos ${horizon}${focus ? ' con especial enfoque en ' + focus : ''}`;
 
   try {
-    const result = await callClaude(system, query);
+    const result = await callGemini(system, query);
     document.getElementById('events-output').textContent = result;
   } catch (e) {
     showError('events-output', e.message);
@@ -207,6 +234,7 @@ function initCompanies() {
 
 function renderCompanies() {
   const list = document.getElementById('company-list');
+  if(!list) return;
   list.innerHTML = '';
   companies.forEach((c, i) => {
     const row = document.createElement('div');
@@ -244,21 +272,13 @@ function removeCompany(i) {
 
 async function getTracking() {
   if (companies.length === 0) { alert('Añade al menos una empresa.'); return; }
-
   showLoading('tracking-output', 'tracking-result');
-
   const names = companies.map(c => c.name).join(', ');
 
-  const system = `Eres un analista de oportunidades profesionales para Moni, ingeniera aeroespacial buscando prácticas o trabajo en sector aerospace, defensa e IA. Busca en internet las últimas noticias de las empresas indicadas y devuelve un informe con:
-- Noticia o movimiento más relevante de cada empresa
-- Indicios de contratación, nuevos proyectos o expansión
-- Nota de seguimiento: qué haría tiene sentido hacer ahora (conectar con alguien, postular, seguir de cerca)
-En español. Formato por empresa. Directo y accionable.`;
-
-  const query = `Últimas noticias, proyectos y contrataciones de estas empresas del sector aeroespacial y de defensa: ${names}`;
+  const system = `Eres un agente analista de mercado corporativo. Examina hitos recientes, proyectos industriales estratégicos adjudicados y dinámicas operativas relevantes de las siguientes corporaciones tecnológicas. Genera un reporte directo en español con notas explícitas de acercamiento táctico para Moni.`;
 
   try {
-    const result = await callClaude(system, query);
+    const result = await callGemini(system, `Genera informe estratégico de actualización para: ${names}`);
     document.getElementById('tracking-output').textContent = result;
   } catch (e) {
     showError('tracking-output', e.message);
@@ -269,4 +289,51 @@ function trackingToPost() {
   const info = document.getElementById('tracking-output').textContent;
   document.getElementById('post-idea').value = info.substring(0, 500);
   switchPanel('post', document.querySelector('[data-panel="post"]'));
+}
+
+// ── NEW STUDY MODULE (MULTIMODAL GEMINI) ──────────────────────────────────────
+async function generateStudyMaterial() {
+  const materialFile = document.getElementById('study-material').files[0];
+  const examFile = document.getElementById('study-exam').files[0];
+  const studyType = document.getElementById('study-type').value;
+  const difficulty = document.getElementById('study-difficulty').value;
+
+  showLoading('study-output', 'study-result');
+
+  const system = `Eres CARLA.agent, la mentora y profesora particular de ingeniería avanzada de Moni. Tu objetivo es dinamizar asignaturas complejas y áridas (matemáticas avanzadas, mecánica de fluidos, cálculo numérico, estructuras). 
+Eres experta en metodología didáctica e impecable a nivel matemático y físico.
+Cuando generes enunciados o resuelvas problemas:
+1. Explica minuciosamente el trasfondo físico y lógico de cada paso, aislando las variables clave.
+2. Desglosa los desarrollos matemáticos de manera secuencial, clara y super exacta con alta precisión numérica.
+3. El formato de salida debe ser estructurado usando texto limpio scannable y ordenado para facilitar el estudio visual.`;
+
+  let promptUsuario = `Por favor, actúa como mi tutora técnica y genera el siguiente material de estudio:
+- Tipo de material: ${studyType.replace('_', ' ')}
+- Nivel de dificultad elegido: ${difficulty === 'similar' ? 'Fiel e idéntico al estándar del examen previo' : 'Nivel Reto (un paso más avanzado para asegurar excelente nota)'}.
+
+INSTRUCCIONES CLAVE:
+Si te he adjuntado un modelo de examen previo, replica meticulosamente su estructura, formato de preguntas, lenguaje académico, sistema de puntuación y estilo conceptual.
+Si te he adjuntado apuntes, extrae los conceptos clave de ahí.
+Al final, incluye obligatoriamente un SOLUCIONARIO detallado, justificando físicamente cada paso, fórmula empleada y el resultado algebraico o numérico obtenido.`;
+
+  try {
+    const attachments = [];
+    
+    // Convertimos a base64 los archivos que el usuario haya seleccionado voluntariamente
+    if (materialFile) {
+      const part = await fileToGenerativePart(materialFile);
+      attachments.push(part);
+      promptUsuario += "\n[Analiza el archivo adjunto que contiene los apuntes de la asignatura]";
+    }
+    if (examFile) {
+      const part = await fileToGenerativePart(examFile);
+      attachments.push(part);
+      promptUsuario += "\n[Analiza el archivo adjunto que contiene el modelo de examen antiguo para clonar su estilo y formato]";
+    }
+
+    const result = await callGemini(system, promptUsuario, attachments);
+    document.getElementById('study-output').textContent = result;
+  } catch (e) {
+    showError('study-output', e.message);
+  }
 }

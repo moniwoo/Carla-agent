@@ -98,9 +98,9 @@ async function callGemini(promptText, outputElementId, resultCardId) {
   if (outputBox) outputBox.innerHTML = "<div class='loading-box'>✨ Emilia está pensando y procesando los datos...</div>";
 
   try {
-    const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + apiKey;
+    // Usamos el alias universal de Google con la versión v1beta que nunca falla
+    const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=" + apiKey;
 
-    // Forzamos explícitamente el método POST con mayúsculas y limpiamos la estructura
     const response = await fetch(url, {
       method: "POST",
       headers: { 
@@ -135,7 +135,6 @@ async function callGemini(promptText, outputElementId, resultCardId) {
     if (outputBox) outputBox.innerHTML = "Hubo un error al conectar con Emilia. Inténtalo de nuevo.";
   }
 }
-
 // ==========================================
 // 4. FUNCIONES DE EMILIA ACTICADAS
 // ==========================================

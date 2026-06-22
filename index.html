@@ -86,7 +86,7 @@
         <div class="panel hidden" id="panel-post">
           <div class="card">
             <div class="card-label">Tu idea o nota</div>
-            <textarea id="post-idea" placeholder="Ej: Estuve analizando el coeficiente de resistencia aerodinámica en perfiles NACA y cómo la IA puede optimizar la capa límite..."></textarea>
+            <textarea id="post-idea" placeholder="Ej: Estuve analizando el coeficiente de resistencia aerodinámica en perfiles NACA..."></textarea>
             <div class="row-gap">
               <div>
                 <div class="card-label">Tono</div>
@@ -121,7 +121,7 @@
 
         <div class="panel hidden" id="panel-trends">
           <div class="card">
-            <div class="card-label">Sectors base monitorizados</div>
+            <div class="card-label">Sectores base monitorizados</div>
             <div class="tags">
               <span class="tag">Aerospace & Defense</span>
               <span class="tag">IA aplicada</span>
@@ -131,7 +131,7 @@
             </div>
             
             <div class="card-label" style="margin-top:0.75rem">Filtrar por aspecto específico (Opcional)</div>
-            <input type="text" id="trends-focus" placeholder="Ej: hidrógeno verde, propulsión eléctrica, regulación de drones..." />
+            <input type="text" id="trends-focus" placeholder="Ej: hidrógeno verde, propulsión eléctrica..." />
             
             <div class="card-label" style="margin-top:0.75rem">Periodo</div>
             <select id="trends-period">
@@ -165,7 +165,7 @@
               </div>
               <div>
                 <div class="card-label">Provincia / Región</div>
-                <input type="text" id="events-region" placeholder="Ej: Sevilla, Madrid, Barcelona..." />
+                <input type="text" id="events-region" placeholder="Ej: Sevilla, Madrid..." />
               </div>
             </div>
             <div class="row-gap" style="margin-top:0.75rem">
@@ -179,7 +179,7 @@
               </div>
               <div>
                 <div class="card-label">Tema específico (opcional)</div>
-                <input type="text" id="events-focus" placeholder="Ej: defensa, aeroespacial, visión artificial..." />
+                <input type="text" id="events-focus" placeholder="Ej: defensa, aeroespacial..." />
               </div>
             </div>
             <div style="height:0.75rem"></div>
@@ -206,10 +206,10 @@
           </div>
           <div class="card">
             <div class="card-label">Enfoque u objetivo del informe</div>
-            <input type="text" id="tracking-focus" placeholder="Ej: nuevas ofertas de prácticas remuneradas, contratos de defensa, vacantes en Sevilla..." />
+            <input type="text" id="tracking-focus" placeholder="Ej: vacantes en Sevilla..." />
             
             <div style="height:0.75rem"></div>
-            <button class="btn btn-primary" onclick="getTracking()"><i class="ti ti-report-analytics"></i> Generar informe enfocado</button>
+            <button class="btn btn-primary" onclick="getTracking()"><i class="ti ti-report-analytics"></i> Generar informe</button>
           </div>
 
           <div id="tracking-result" class="card hidden">
@@ -227,7 +227,7 @@
             <div class="card-label">Material de la asignatura (Apuntes o Guía PDF)</div>
             <input type="file" id="study-material" accept="application/pdf,image/*" />
             
-            <div class="card-label" style="margin-top:0.5rem">Modelo de Examen Antiguo (PDF o Imagen de examen previo)</div>
+            <div class="card-label" style="margin-top:0.5rem">Modelo de Examen Antiguo</div>
             <input type="file" id="study-exam" accept="application/pdf,image/*" />
 
             <div class="row-gap" style="margin-top:0.5rem">
@@ -235,20 +235,20 @@
                 <div class="card-label">Tipo de simulación</div>
                 <select id="study-type">
                   <option value="examen_completo">Examen Completo con Solucionario</option>
-                  <option value="test">Batería de Preguntas de Test Explicadas</option>
-                  <option value="problema_desarrollado">Problema Práctico Desglosado Paso a Paso</option>
+                  <option value="test">Batería de Test</option>
+                  <option value="problema_desarrollado">Problema Paso a Paso</option>
                 </select>
               </div>
               <div>
                 <div class="card-label">Nivel de Dificultad</div>
                 <select id="study-difficulty">
-                  <option value="similar">Idéntico al examen adjunto</option>
-                  <option value="reto">Un paso más complejo (Nivel Reto)</option>
+                  <option value="similar">Idéntico al examen</option>
+                  <option value="reto">Nivel Reto</option>
                 </select>
               </div>
             </div>
             <div style="height:0.5rem"></div>
-            <button class="btn btn-primary" onclick="generateStudyMaterial()"><i class="ti ti-school"></i> Generar material de estudio</button>
+            <button class="btn btn-primary" onclick="generateStudyMaterial()"><i class="ti ti-school"></i> Generar material</button>
           </div>
 
           <div id="study-result" class="card hidden">

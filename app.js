@@ -26,7 +26,17 @@ window.addEventListener('DOMContentLoaded', () => {
   if (key) {
     document.getElementById('api-overlay').style.display = 'none';
     document.getElementById('app').style.display = 'flex';
-    initCompanies();
+   function initCompanies() {
+  companies = loadCompanies();
+  
+  // Si la lista está vacía (porque se borró el almacenamiento), la restauramos con las de por defecto
+  if (companies.length === 0) {
+    companies = [...DEFAULT_COMPANIES];
+    saveCompanies(); // Las dejamos fijadas en el navegador
+  }
+  
+  renderCompanies();
+}
   }
 });
 

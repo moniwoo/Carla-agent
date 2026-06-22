@@ -21,23 +21,44 @@ function getKey() {
 }
 
 // ── INIT ─────────────────────────────────────────────────────────────────────
+// ── INIT ─────────────────────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
   const key = getKey();
   if (key) {
     document.getElementById('api-overlay').style.display = 'none';
     document.getElementById('app').style.display = 'flex';
-   function initCompanies() {
-  companies = loadCompanies();
-  
-  // Si la lista está vacía (porque se borró el almacenamiento), la restauramos con las de por defecto
-  if (companies.length === 0) {
-    companies = [...DEFAULT_COMPANIES];
-    saveCompanies(); // Las dejamos fijadas en el navegador
+    initCompanies();
+    generateRandomGreeting(); // <-- Inyectamos el saludo aleatorio al entrar
   }
+});
+
+// ── SALUDOS ALEATORIOS ESTILO GEMINI ─────────────────────────────────────────
+function generateRandomGreeting() {
+  const greetings = [
+    "Hellou Hellouuu Moni"
+    "¡Hola, Moni!",
+    "¡Buenas de nuevo, Moni!",
+    "¡Qué pasa pichona!"
+    "¡Hola de nuevo, jefa!",
+    "¡Todo listo, Moni!"
+  ];
   
-  renderCompanies();
-}
-  }
+  const messages = [
+    "Qué alegría verte de nuevo. ¿Qué vamos a diseñar u optimizar hoy?",
+    "Es un gran día para impulsar tus redes y avanzar en tus asignaturas técnicas.",
+    "Un placer saludarte. ¿Revisamos tendencias de mercado o preparamos un simulacro de examen?",
+    "Lista para la acción. Dime en qué módulo nos enfocamos hoy."
+  ];
+
+  // Elegimos combinaciones aleatorias
+  const randomGreeting = greetings[Math.floor(Math.random() * greetings.length)];
+  const randomMessage = messages[Math.floor(Math.random() * messages.length)];
+
+  const greetingEl = document.getElementById('welcome-greeting');
+  const messageEl = document.getElementById('welcome-message');
+
+  if (greetingEl) greetingEl.textContent = randomGreeting;
+  if (messageEl) messageEl.textContent = randomMessage;
 });
 
 // ── PANEL NAVIGATION ─────────────────────────────────────────────────────────
@@ -50,6 +71,10 @@ const PANEL_META = {
 };
 
 function switchPanel(id, el) {
+  function switchPanel(id, el) {
+  // Ocultamos la pantalla de bienvenida al cambiar de sección
+  const welcome = document.getElementById('welcome-screen');
+  if (welcome) welcome.style.display = 'none';
   // Ocultamos todos los paneles añadiendo 'hidden' y quitando 'active'
   document.querySelectorAll('.panel').forEach(p => { 
     p.classList.add('hidden'); 
@@ -144,7 +169,7 @@ function fileToGenerativePart(file) {
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
 function showLoading(outputId, resultId) {
-  document.getElementById(outputId).innerHTML = '<span class="loading-text">CARLA está procesando tu solicitud... Esto se puede demorar unos segundos.</span>';
+  document.getElementById(outputId).innerHTML = '<span class="loading-text">EMILIA está procesando tu solicitud... Esto se puede demorar unos segundos.</span>';
   document.getElementById(resultId).classList.remove('hidden');
   document.getElementById(resultId).style.display = 'flex';
 }
@@ -173,7 +198,7 @@ async function generatePost() {
 
   showLoading('post-output', 'post-result');
 
-  const system = `Eres CARLA.agent, la asistente e inteligente aliada de LinkedIn de Moni, estudiante de ingenieria mecánica en Sevilla. Moni ha cursado un master en Ingenieria aerosespacial y cursa un máster en Visión Artificial y es miembro de EYE, European Young Engineers. Tienes un profundo interés por aerospace, IA, drones, defensa, emprendimiento y la sostenibilidad.
+  const system = `Eres EMILIA.agent, la asistente e inteligente aliada de LinkedIn de Moni, estudiante de ingenieria mecánica en Sevilla. Moni ha cursado un master en Ingenieria aerosespacial y cursa un máster en Visión Artificial y es miembro de EYE, European Young Engineers. Tienes un profundo interés por aerospace, IA, drones, defensa, emprendimiento y la sostenibilidad.
 Redactas posts profesionales optimizados para LinkedIn en su voz exacta: directa, contundente, estructurada con saltos de línea estratégicos, apertura de alto impacto, sin halagos corporativos empalagosos y con un máximo de 1-2 emojis contextuales. En español y a veces en inglés.
 
 Tono requerido: ${tone}
@@ -199,7 +224,7 @@ async function getTrends() {
     topics = `EL ASPECTO ESPECÍFICO: "${focusTopic}" enfocado e intersecado con la ingeniería avanzada`;
   }
 
-  const system = `Eres CARLA.agent, analista técnica sénior. Estructura un informe claro, analítico y altamente visual en español de España sobre las novedades de la última ${period}.
+  const system = `Eres EMILIA.agent, analista técnica sénior. Estructura un informe claro, analítico y altamente visual en español de España sobre las novedades de la última ${period}.
 INSTRUCCIONES DE FORMATO IMPRESCINDIBLES:
 - Usa títulos claros con '##' o '###'.
 - Usa negritas '**texto**' para destacar palabras clave de impacto y subrayados '__texto__' para nombres de tecnologías o proyectos.
@@ -224,7 +249,7 @@ async function getEvents() {
   const horizon = document.getElementById('events-horizon').value;
   const focus = document.getElementById('events-focus').value.trim();
 
-  const system = `Eres CARLA.agent, mentora de carrera en ingeniería. Lista ferias de empleo, congresos de aeronáutica, defensa, robótica e inteligencia artificial. Devuelve una lista organizada por fechas que detone el nombre del evento, la localización exacta y el valor técnico o de networking que aporta a un perfil de ingeniería avanzada. Idioma español.`;
+  const system = `Eres EMILIA.agent, mentora de carrera en ingeniería. Lista ferias de empleo, congresos de aeronáutica, defensa, robótica e inteligencia artificial. Devuelve una lista organizada por fechas que detone el nombre del evento, la localización exacta y el valor técnico o de networking que aporta a un perfil de ingeniería avanzada. Idioma español.`;
 
   // Construimos la localización combinando País y Provincia de forma natural
   let localizacion = country;
@@ -253,7 +278,7 @@ async function getTracking() {
     peticion = `Busca, rastrea y analiza exhaustivamente dentro de las siguientes empresas (${names}) este objetivo específico: "${objective}". Pon foco absoluto en resolver esta intención.`;
   }
 
-  const system = `Eres un agente analista de mercado corporativo y headhunter de ingeniería. Examina hitos industriales y operacionales. 
+  const system = `Eres una agente analista de mercado corporativo y headhunter de ingeniería. Examina hitos industriales y operacionales. 
 INSTRUCCIONES DE FORMATO:
 - Usa títulos llamativos ('##' o '###'), negritas en hitos importantes y listas ordenadas con guiones ejecutivos. No entregues bloques de texto planos.
 - Si el usuario busca ofertas, oportunidades o datos numéricos de mercado, y detectas valores estadísticos significativos o comparativas, genera un gráfico usando esta estructura exacta al final de la sección: [CHART: Título del Análisis | Item1:90%, Item2:60%]`;
@@ -275,7 +300,7 @@ async function generateStudyMaterial() {
 
   showLoading('study-output', 'study-result');
 
-  const system = `Eres CARLA.agent, la mentora y profesora particular de ingeniería avanzada de Moni. Tu objetivo es dinamizar asignaturas complejas y áridas (matemáticas avanzadas, mecánica de fluidos, cálculo numérico, estructuras). 
+  const system = `Eres EMILIA.agent, la mentora y profesora particular de ingeniería avanzada de Moni. Tu objetivo es dinamizar asignaturas complejas y áridas (matemáticas avanzadas, mecánica de fluidos, cálculo numérico, estructuras). 
 Eres experta en metodología didáctica e impecable a nivel matemático y físico.
 Cuando generes enunciados o resuelvas problemas:
 1. Explica minuciosamente el trasfondo físico y lógico de cada paso, aislando las variables clave.

@@ -302,3 +302,161 @@ Al final, incluye obligatoriamente un SOLUCIONARIO detallado, justificando físi
     showError('study-output', e.message);
   }
 }
+// ── CONVERSOR DE MARKDOWN A HTML VISUAL CORREGIDO (LÍNEA POR LÍNEA) ──────────
+function parseMarkdown(text) {
+  if (!text) return '';
+
+  let lines = text.split('\n');
+  let htmlResult = [];
+  let inList = false;
+
+  lines.forEach(line => {
+    let cleanLine = line.trim();
+
+    // Saltar líneas vacías pero asegurar separación de párrafos
+    if (cleanLine === '') {
+      if (inList) { htmlResult.push('</ul>'); inList = false; }
+      htmlResult.push('<br>');
+      return;
+    }
+
+    // Procesar bloques de gráficos si la IA los genera
+    if (cleanLine.startsWith('[CHART:')) {
+      const chartRegex = /\[CHART:\s*([^|]+)\s*\|\s*([^\]]+)\]/g;
+      cleanLine = cleanLine.replace(chartRegex, (match, title, dataStr) => {
+        let chartHtml = `<div class="stats-chart-mock"><strong>📊 ${title.trim()}</strong><div style="margin-top:0.75rem;">`;
+        const pairs = dataStr.split(',');
+        pairs.forEach(pair => {
+          const [label, val] = pair.split(':');
+          if(label && val) {
+            const percent = parseInt(val.replace(/[^0-9]/g, '')) || 50;
+            chartHtml += `
+              <div class="chart-bar-row">
+                <div class="chart-label">${label.trim()}</div>
+                <div class="chart-bar-wrapper"><div class="chart-bar-fill" style="width: ${Math.min(percent, 100)}%"></div></div>
+                <div class="chart-value">${val.trim()}</div>
+              </div>`;
+          }
+        });
+        chartHtml += `</div></div>`;
+        return chartHtml;
+      });
+      htmlResult.push(cleanLine);
+      return;
+    }
+
+    // Procesar Títulos (Headers)
+    if (cleanLine.startsWith('### ')) {
+      if (inList) { htmlResult.push('</ul>'); inList = false; }
+      htmlResult.push(`<h4>${cleanLine.replace('### ', '')}</h4>`);
+      return;
+    }
+    if (cleanLine.startsWith('## ')) {
+      if (inList) { htmlResult.push('</ul>'); inList = false; }
+      htmlResult.push(`<h3>${cleanLine.replace('## ', '')}</h3>`);
+      return;
+    }
+
+    // Procesar Listas / Bullets (líneas que empiezan con - o *)
+    if (cleanLine.startsWith('- ') || cleanLine.startsWith('* ')) {
+      if (!inList) { htmlResult.push('<ul>'); inList = true; }
+      let content = cleanLine.substring(2);
+      content = applyInlineFormatting(content);
+      htmlResult.push(`<li>${content}</li>`);
+      return;
+    }
+
+    // Línea normal de texto (párrafo)
+    if (inList) { htmlResult.push('</ul>'); inList = false; }
+    htmlResult.push(`<p>${applyInlineFormatting(cleanLine)}</p>`);
+  });
+
+  if (inList) htmlResult.push('</ul>');
+
+  return htmlResult.join('');
+}
+
+// Función auxiliar para procesar negritas, cursivas y subrayados sin romper la línea
+function applyInlineFormatting(txt) {
+  let formatted = txt;
+  formatted = formatted.replace(/\*\*\*\*(.*?)\*\*\*\*/g, '<strong>$1</strong>');
+  formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  formatted = formatted.replace(/\*(.*?)\*/g, '<em>$1</em>');
+  formatted = formatted.replace(/__(.*?)__/g, '<u>$1</u>');
+  return formatted;
+}
+
+// ── COMPANY LIST DATABASE & LOGIC ───────────────────────────────────────────
+const DEFAULT_COMPANIES = [
+  { name: 'Airbus', category: 'Aerospace' },
+  { name: 'Indra', category: 'Defense / AI' },
+  { name: 'Akkodis', category: 'Engineering' },
+  { name: 'Multiverse Computing', category: 'Quantum / AI' },
+  { name: 'UAV Navigation', category: 'Drones' }
+];
+
+let companies = [];
+
+function loadCompanies() {
+  const stored = localStorage.getItem('tracked_companies');
+  return stored ? JSON.parse(stored) : [...DEFAULT_COMPANIES];
+}
+
+function saveCompanies() {
+  localStorage.setItem('tracked_companies', JSON.stringify(companies));
+}
+
+function initCompanies() {
+  companies = loadCompanies();
+  renderCompanies();
+}
+
+function renderCompanies() {
+  const list = document.getElementById('company-list');
+  if(!list) return;
+  list.innerHTML = '';
+  companies.forEach((c, i) => {
+    const row = document.createElement('div');
+    row.className = 'company-row';
+    row.innerHTML = `
+      <div class="company-meta">
+        <span>${c.name}</span>
+        <span class="badge">${c.category}</span>
+      </div>
+      <button class="btn-remove" onclick="removeCompany(${i})" title="Eliminar"><i class="ti ti-x"></i></button>
+    `;
+    list.appendChild(row);
+  });
+}
+
+function addCompany() {
+  const input = document.getElementById('new-company');
+  const name = input.value.trim();
+  if (!name) return;
+  if (companies.find(c => c.name.toLowerCase() === name.toLowerCase())) {
+    input.value = '';
+    return;
+  }
+  companies.push({ name, category: 'Nuevo' });
+  saveCompanies();
+  renderCompanies();
+  input.value = '';
+}
+
+function removeCompany(i) {
+  companies.splice(i, 1);
+  saveCompanies();
+  renderCompanies();
+}
+
+function trendToPost() {
+  const trends = document.getElementById('trends-output').textContent;
+  document.getElementById('post-idea').value = trends.substring(0, 500);
+  switchPanel('post', document.querySelector('[data-panel="post"]'));
+}
+
+function trackingToPost() {
+  const info = document.getElementById('tracking-output').textContent;
+  document.getElementById('post-idea').value = info.substring(0, 500);
+  switchPanel('post', document.querySelector('[data-panel="post"]'));
+}

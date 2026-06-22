@@ -71,15 +71,20 @@ const PANEL_META = {
 };
 
 function switchPanel(id, el) {
-  function switchPanel(id, el) {
-  // Ocultamos la pantalla de bienvenida al cambiar de sección
+  // Asegurar que ocultamos la pantalla de bienvenida al cambiar de sección
   const welcome = document.getElementById('welcome-screen');
-  if (welcome) welcome.style.display = 'none';
-  // Ocultamos todos los paneles añadiendo 'hidden' y quitando 'active'
-  document.querySelectorAll('.panel').forEach(p => { 
-    p.classList.add('hidden'); 
-    p.classList.remove('active'); 
-  });
+  if (welcome) {
+    welcome.style.display = 'none';
+  }
+
+  // Ocultar todos los paneles (tu código actual continúa aquí abajo...)
+  document.querySelectorAll('.panel').forEach(p => p.classList.add('hidden'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  
+  const target = document.getElementById(`panel-${id}`);
+  if (target) target.classList.remove('hidden');
+  if (el) el.classList.add('active');
+}
   
   // Quitamos la clase activa de todos los botones de la barra lateral
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));

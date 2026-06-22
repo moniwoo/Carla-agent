@@ -81,7 +81,7 @@ function navigateToPanel(panelId) {
 }
 
 // ==========================================
-// 3. LLAMADA DE RED DEFINITIVA A GEMINI
+// 3. LLAMADA DE RED UNIFICADA (MÁXIMA ESTABILIDAD)
 // ==========================================
 
 async function callGemini(promptText, outputElementId, resultCardId) {
@@ -98,8 +98,9 @@ async function callGemini(promptText, outputElementId, resultCardId) {
   if (outputBox) outputBox.innerHTML = "<div class='loading-box'>✨ Emilia está pensando y procesando los datos...</div>";
 
   try {
-    // URL estándar oficial de la API v1beta para modelos modernos
-const url = "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=" + apiKey;
+    // URL e Identificador oficial de producción para evitar errores 404
+    const url = "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=" + apiKey;
+
     const response = await fetch(url, {
       method: "POST",
       headers: { 
@@ -123,7 +124,7 @@ const url = "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flas
     if (data.candidates && data.candidates[0].content.parts[0].text) {
       let responseText = data.candidates[0].content.parts[0].text;
       
-      // Formateo visual básico para la interfaz
+      // Formateo visual para saltos de línea y negritas en la interfaz HTML
       responseText = responseText.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
       if (outputBox) outputBox.innerHTML = responseText;
     } else {
@@ -145,7 +146,7 @@ function generatePost() {
   const length = document.getElementById('post-length').value;
   if (!idea) { alert("Escribe una idea primero."); return; }
   
-  const prompt = `Actúa como una mentora experta llamada Emilia. Redacta un post para LinkedIn basado en esta idea: "${idea}". Tono: ${tone}. Longitud: ${length}.`;
+  const prompt = `Actúa como una mentora experta llamada Emilia. Redacta un post profesional para LinkedIn basado en esta idea: "${idea}". Tono del escrito: ${tone}. Longitud aproximada: ${length}. Mantenlo directo e interesante.`;
   callGemini(prompt, 'post-output', 'post-result');
 }
 
@@ -153,7 +154,7 @@ function getTrends() {
   const focus = document.getElementById('trends-focus').value || "general";
   const period = document.getElementById('trends-period').value;
   
-  const prompt = `Analiza las tendencias en ingeniería e IA enfocándote en: "${focus}" para el periodo de ${period}.`;
+  const prompt = `Analiza las tendencias más recientes en ingeniería, tecnologías emergentes e IA, haciendo un enfoque especial en: "${focus}" para el periodo del último/a ${period}. Estructura la respuesta con puntos claros.`;
   callGemini(prompt, 'trends-output', 'trends-result');
 }
 
@@ -161,9 +162,9 @@ function getEvents() {
   const country = document.getElementById('events-country').value;
   const region = document.getElementById('events-region').value;
   const horizon = document.getElementById('events-horizon').value;
-  const focus = document.getElementById('events-focus').value || "tecnología";
+  const focus = document.getElementById('events-focus').value || "tecnología e ingeniería";
   
-  const prompt = `Listado de eventos técnicos en ${country}, ${region} para los próximos ${horizon} sobre ${focus}.`;
+  const prompt = `Genera un listado de eventos técnicos, congresos, ferias sectoriales o conferencias en ${country} (Región/Provincia: ${region}) previstos para los próximos/as ${horizon} sobre el sector: ${focus}.`;
   callGemini(prompt, 'events-output', 'events-result');
 }
 
@@ -171,7 +172,7 @@ function generateStudyMaterial() {
   const type = document.getElementById('study-type').value;
   const difficulty = document.getElementById('study-difficulty').value;
   
-  const prompt = `Genera un ejercicio técnico explicado paso a paso de tipo "${type}" con nivel "${difficulty}" enfocado en ingeniería (estructuras, cálculo o circuitos).`;
+  const prompt = `Genera un ejercicio académico detallado de nivel universitario avanzado para ingeniería. Tipo de ejercicio: "${type}" con una dificultad: "${difficulty}". Incluye todo el desarrollo matemático o conceptual explicado paso a paso de forma impecable y didáctica.`;
   callGemini(prompt, 'study-output', 'study-result');
 }
 
@@ -186,7 +187,7 @@ function initCompanies() {
   if (stored) {
     companies = JSON.parse(stored);
   } else {
-    companies = ["Navantia", "Airbus"];
+    companies = ["Navantia", "Airbus", "Akkodis"];
   }
   renderCompanies();
 }
@@ -222,16 +223,32 @@ function removeCompany(index) {
 }
 
 function getTracking() {
-  const focus = document.getElementById('tracking-focus').value || "vacantes";
-  if (companies.length === 0) { alert("Añade alguna empresa."); return; }
+  const focus = document.getElementById('tracking-focus').value || "vacantes generales";
+  if (companies.length === 0) { alert("Añade al menos una empresa al listado para realizar el seguimiento."); return; }
   
-  const prompt = `Informe estratégico del mercado sobre las empresas: ${companies.join(', ')}. Objetivo: ${focus}.`;
+  const prompt = `Realiza un informe estratégico de monitorización de mercado enfocado en las siguientes empresas: ${companies.join(', ')}. El objetivo prioritario de este informe es: "${focus}".`;
   callGemini(prompt, 'tracking-output', 'tracking-result');
+}
+
+// ==========================================
+// 6. FUNCIONES DE CONVERSIÓN Y COPIADO
+// ==========================================
+
+function trendToPost() {
+  const trendsContent = document.getElementById('trends-output').innerText;
+  navigateToPanel('post');
+  document.getElementById('post-idea').value = `Basándote en estas tendencias de mercado:\n\n${trendsContent}\n\nRedacta un post estratégico analizando el impacto de esto en la ingeniería.`;
+}
+
+function trackingToPost() {
+  const trackingContent = document.getElementById('tracking-output').innerText;
+  navigateToPanel('post');
+  document.getElementById('post-idea').value = `A raíz de este análisis estratégico de empresas:\n\n${trackingContent}\n\nEscribe una reflexión profesional para LinkedIn sobre los perfiles más demandados y las oportunidades detectadas.`;
 }
 
 function copyText(elementId) {
   const element = document.getElementById(elementId);
   if (!element) return;
   const text = element.innerText || element.value;
-  navigator.clipboard.writeText(text).then(() => alert('¡Copiado!'));
+  navigator.clipboard.writeText(text).then(() => alert('¡Contenido copiado al portapapeles con éxito!'));
 }

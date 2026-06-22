@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LinkedIn Agent · Moni</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<div id="api-overlay" class="overlay">
+  <div class="overlay-card">
+    <div class="overlay-logo">LinkedIn Agent</div>
+    <p class="overlay-sub">Introduce tu API key de Anthropic para empezar</p>
+    <input type="password" id="api-key-input" placeholder="sk-ant-..." />
+    <button class="btn btn-primary" onclick="saveKey()">Acceder</button>
+    <a href="https://console.anthropic.com/settings/keys" target="_blank" class="overlay-link">¿Cómo obtengo mi API key? →</a>
+  </div>
+</div>
+
+<div class="app" id="app" style="display:none">
+  <div class="sidebar">
+    <div class="logo">
+      <div class="logo-title">LinkedIn Agent</div>
+      <div class="logo-sub">Moni · Ingeniería & IA</div>
+    </div>
+    <div class="nav-item active" data-panel="post" onclick="switchPanel('post', this)">
+      <i class="ti ti-edit"></i> Redactar post
+    </div>
+    <div class="nav-item" data-panel="trends" onclick="switchPanel('trends', this)">
+      <i class="ti ti-trending-up"></i> Tendencias
+    </div>
+    <div class="nav-item" data-panel="events" onclick="switchPanel('events', this)">
+      <i class="ti ti-calendar-event"></i> Eventos
+    </div>
+    <div class="nav-item" data-panel="tracking" onclick="switchPanel('tracking', this)">
+      <i class="ti ti-building"></i> Seguimiento
+    </div>
+    <div class="sidebar-footer">
+      <button class="btn-ghost" onclick="clearKey()"><i class="ti ti-logout"></i> Cerrar sesión</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <div class="topbar-title" id="topbar-title">Redactar post</div>
+        <div class="topbar-sub" id="topbar-sub">Convierte una idea en un post con tu voz</div>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- POST -->
+      <div class="panel active" id="panel-post">
+        <div class="card">
+          <div class="card-label">Tu idea o nota</div>
+          <textarea id="post-idea" placeholder="Ej: Estuve en ADM Sevilla y me sorprendió cómo las startups de drones están cambiando la lógica de la defensa..."></textarea>
+          <div class="row-gap">
+            <div>
+              <div class="card-label">Tono</div>
+              <select id="post-tone">
+                <option value="reflexivo">Reflexivo y directo</option>
+                <option value="ambicioso">Ambicioso y proyectivo</option>
+                <option value="tecnico">Técnico con perspectiva propia</option>
+                <option value="narrativo">Narrativo (experiencia vivida)</option>
+              </select>
+            </div>
+            <div>
+              <div class="card-label">Longitud</div>
+              <select id="post-length">
+                <option value="corto">Corto (~150 palabras)</option>
+                <option value="medio">Medio (~250 palabras)</option>
+                <option value="largo">Largo (~400 palabras)</option>
+              </select>
+            </div>
+          </div>
+          <button class="btn btn-primary" onclick="generatePost()"><i class="ti ti-wand"></i> Generar post</button>
+        </div>
+        <div id="post-result" class="card hidden">
+          <div class="card-label">Post generado</div>
+          <div class="result-box" id="post-output"></div>
+          <div class="btn-row">
+            <button class="btn" onclick="copyText('post-output')"><i class="ti ti-copy"></i> Copiar</button>
+            <button class="btn" onclick="generatePost()"><i class="ti ti-refresh"></i> Regenerar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- TRENDS -->
+      <div class="panel hidden" id="panel-trends">
+        <div class="card">
+          <div class="card-label">Sectores monitorizados</div>
+          <div class="tags">
+            <span class="tag">Aerospace & Defense</span>
+            <span class="tag">IA aplicada</span>
+            <span class="tag">Drones / UAS</span>
+            <span class="tag">Digital twins</span>
+            <span class="tag">Computer Vision</span>
+          </div>
+          <input type="text" id="trends-extra" placeholder="Añadir tema extra (opcional)..." />
+          <div class="card-label" style="margin-top:0.75rem">Periodo</div>
+          <select id="trends-period">
+            <option value="semana">Última semana</option>
+            <option value="mes">Último mes</option>
+          </select>
+          <div style="height:0.75rem"></div>
+          <button class="btn btn-primary" onclick="getTrends()"><i class="ti ti-search"></i> Buscar tendencias</button>
+        </div>
+        <div id="trends-result" class="card hidden">
+          <div class="card-label">Resumen de tendencias</div>
+          <div class="result-box" id="trends-output"></div>
+          <div class="btn-row">
+            <button class="btn" onclick="copyText('trends-output')"><i class="ti ti-copy"></i> Copiar</button>
+            <button class="btn btn-primary" onclick="trendToPost()"><i class="ti ti-edit"></i> Convertir en post</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- EVENTS -->
+      <div class="panel hidden" id="panel-events">
+        <div class="card">
+          <div class="row-gap">
+            <div>
+              <div class="card-label">Área geográfica</div>
+              <select id="events-geo">
+                <option value="España">España</option>
+                <option value="Europa">Europa</option>
+                <option value="Internacional">Internacional</option>
+              </select>
+            </div>
+            <div>
+              <div class="card-label">Horizonte</div>
+              <select id="events-horizon">
+                <option value="3 meses">Próximos 3 meses</option>
+                <option value="6 meses">Próximos 6 meses</option>
+                <option value="1 año">Próximo año</option>
+              </select>
+            </div>
+          </div>
+          <div class="card-label" style="margin-top:0.75rem">Tema específico (opcional)</div>
+          <input type="text" id="events-focus" placeholder="Ej: defensa, sostenibilidad, visión artificial..." />
+          <div style="height:0.75rem"></div>
+          <button class="btn btn-primary" onclick="getEvents()"><i class="ti ti-calendar-search"></i> Buscar eventos</button>
+        </div>
+        <div id="events-result" class="card hidden">
+          <div class="card-label">Eventos encontrados</div>
+          <div class="result-box" id="events-output"></div>
+          <div class="btn-row">
+            <button class="btn" onclick="copyText('events-output')"><i class="ti ti-copy"></i> Copiar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- TRACKING -->
+      <div class="panel hidden" id="panel-tracking">
+        <div class="card">
+          <div class="card-label">Empresas en seguimiento</div>
+          <div id="company-list"></div>
+          <div class="add-row">
+            <input type="text" id="new-company" placeholder="Añadir empresa..." onkeydown="if(event.key==='Enter') addCompany()" />
+            <button class="btn" onclick="addCompany()"><i class="ti ti-plus"></i></button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-label">Generar informe</div>
+          <p class="muted">El agente buscará noticias recientes, movimientos de recruiters y oportunidades de las empresas en tu lista.</p>
+          <div style="height:0.75rem"></div>
+          <button class="btn btn-primary" onclick="getTracking()"><i class="ti ti-report-analytics"></i> Generar informe</button>
+        </div>
+        <div id="tracking-result" class="card hidden">
+          <div class="card-label">Informe de seguimiento</div>
+          <div class="result-box" id="tracking-output"></div>
+          <div class="btn-row">
+            <button class="btn" onclick="copyText('tracking-output')"><i class="ti ti-copy"></i> Copiar</button>
+            <button class="btn btn-primary" onclick="trackingToPost()"><i class="ti ti-edit"></i> Generar post</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

@@ -356,63 +356,81 @@ body {
   font-weight: 600;
 }
 
-/* DISEÑO PANTALLA DE BIENVENIDA ESTILO GEMINI */
+/* DISEÑO PANTALLA DE BIENVENIDA CENTRADA ESTILO EMILIA */
 .welcome-container {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  justify-content: center;
-  padding: 3rem 1.5rem;
-  max-width: 800px;
+  align-items: center;      /* Centra los elementos horizontalmente */
+  justify-content: center;   /* Centra los elementos verticalmente */
+  text-align: center;        /* Centra los textos */
+  padding: 4rem 2rem;
+  max-width: 900px;
+  margin: 0 auto;           /* Empuja todo el bloque al centro real de la pantalla */
   animation: fadeIn 0.8s ease-out;
+  min-height: 80vh;
+}
+
+/* Animación y diseño de los destellos mágicos */
+.welcome-sparkles {
+  font-size: 2.5rem;
+  color: var(--accent);
+  margin-bottom: 1rem;
+  animation: sparklePulse 2s infinite ease-in-out;
+  background: linear-gradient(135deg, #db2777, #f43f5e);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .welcome-title {
-  font-size: 3rem;
-  font-weight: 600;
+  font-size: 3.5rem;
+  font-weight: 700;
   letter-spacing: -0.03em;
-  margin-bottom: 0.5rem;
-  /* Texto degradado con los colores de CARLA */
+  margin-bottom: 0.75rem;
   background: linear-gradient(135deg, #db2777 0%, #f43f5e 50%, #ae2012 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
 .welcome-sub {
-  font-size: 1.35rem;
+  font-size: 1.25rem;
   color: var(--text-muted);
-  margin-bottom: 2.5rem;
+  margin-bottom: 3rem;
   font-weight: 400;
+  max-width: 600px;
 }
 
+/* Rejilla adaptativa de 4 elementos */
 .welcome-suggestions {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1.25rem;
+  grid-template-columns: repeat(2, 1fr); /* Crea una cuadrícula perfecta de 2x2 */
+  gap: 1.5rem;
   width: 100%;
+  max-width: 750px;
 }
 
 .suggestion-card {
-  background: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.75);
   border: 1px solid var(--border);
   border-radius: 16px;
-  padding: 1.25rem;
+  padding: 1.5rem;
   cursor: pointer;
   display: flex;
   flex-direction: column;
+  align-items: center;       /* Centra el icono y el texto dentro de la tarjeta */
+  justify-content: center;
   gap: 0.75rem;
-  transition: all 0.25s ease;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .suggestion-card:hover {
   background: #ffffff;
   border-color: var(--accent);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(219, 39, 119, 0.06);
+  transform: translateY(-4px);
+  box-shadow: 0 10px 25px rgba(219, 39, 119, 0.08);
 }
 
 .suggestion-card i {
-  font-size: 1.5rem;
+  font-size: 1.75rem;
   color: var(--accent);
 }
 
@@ -420,9 +438,18 @@ body {
   font-size: 0.95rem;
   font-weight: 500;
   color: var(--text);
+  line-height: 1.4;
 }
 
+/* ANIMACIONES */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
+  from { opacity: 0; transform: translateY(15px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+/* Efecto de destello mágico latiendo y brillando */
+@keyframes sparklePulse {
+  0% { transform: scale(1) rotate(0deg); opacity: 0.8; filter: drop-shadow(0 0 2px rgba(219,39,119,0.2)); }
+  50% { transform: scale(1.15) rotate(15deg); opacity: 1; filter: drop-shadow(0 0 10px rgba(219,39,119,0.6)); }
+  100% { transform: scale(1) rotate(0deg); opacity: 0.8; filter: drop-shadow(0 0 2px rgba(219,39,119,0.2)); }
 }

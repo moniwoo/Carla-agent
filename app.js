@@ -181,27 +181,30 @@ Extensión estimada: ${length}`;
 async function getTrends() {
   showLoading('trends-output', 'trends-result');
 
-  const extra = document.getElementById('trends-extra').value.trim();
+  const focusTopic = document.getElementById('trends-focus').value.trim();
   const period = document.getElementById('trends-period').value;
-  const topics = 'Ingeniería aeroespacial, defensa, drones UAS avanzados, IA aplicada, gemelos digitales y Computer Vision' + (extra ? ', ' + extra : '');
+  
+  let topics = 'Ingeniería aeroespacial, defensa, drones UAS avanzados, IA aplicada, gemelos digitales y Computer Vision';
+  if (focusTopic) {
+    topics = `EL ASPECTO ESPECÍFICO: "${focusTopic}" enfocado e intersecado con la ingeniería avanzada`;
+  }
 
-  const system = `Eres CARLA.agent, analista técnica sénior. Tu tarea es estructurar un informe claro, analítico y conciso sobre las tendencias tecnológicas globales en la última ${period}. Formatea el texto limpiamente usando viñetas e incluye secciones de impacto en sectores clave en idioma español de España.`;
+  const system = `Eres CARLA.agent, analista técnica sénior. Estructura un informe claro, analítico y altamente visual en español de España sobre las novedades de la última ${period}.
+INSTRUCCIONES DE FORMATO IMPRESCINDIBLES:
+- Usa títulos claros con '##' o '###'.
+- Usa negritas '**texto**' para destacar palabras clave de impacto y subrayados '__texto__' para nombres de tecnologías o proyectos.
+- Organiza todo con guiones ejecutivos para hacer el texto escaneable.
+- SI EXISTEN DATOS NUMÉRICOS, PORCENTAJES O ESTADÍSTICAS CRUCIALES, genera obligatoriamente un gráfico usando exactamente esta estructura sintáctica al final del bloque: [CHART: Nombre del Gráfico | Criterio1:80%, Criterio2:45%]`;
 
   try {
-    const result = await callGemini(system, `Analiza las tendencias más urgentes y relevantes en los campos de: ${topics}`);
-    document.getElementById('trends-output').textContent = result;
+    const result = await callGemini(system, `Analiza las tendencias más recientes y movimientos de mercado en: ${topics}. Recuerda omitir introducciones vacías.`);
+    // Renderizamos usando nuestro nuevo formateador visual
+    document.getElementById('trends-output').innerHTML = parseMarkdown(result);
   } catch (e) {
     showError('trends-output', e.message);
   }
 }
 
-function trendToPost() {
-  const trends = document.getElementById('trends-output').textContent;
-  document.getElementById('post-idea').value = trends.substring(0, 500);
-  switchPanel('post', document.querySelector('[data-panel="post"]'));
-}
-
-// ── EVENTS MODULE ─────────────────────────────────────────────────────────────
 // ── EVENTS MODULE ─────────────────────────────────────────────────────────────
 async function getEvents() {
   showLoading('events-output', 'events-result');
@@ -229,89 +232,30 @@ async function getEvents() {
   }
 }
 // ── TRACKING MODULE ───────────────────────────────────────────────────────────
-const DEFAULT_COMPANIES = [
-  { name: 'Airbus', category: 'Aerospace' },
-  { name: 'Indra', category: 'Defense / AI' },
-  { name: 'Akkodis', category: 'Engineering' },
-  { name: 'Multiverse Computing', category: 'Quantum / AI' },
-  { name: 'UAV Navigation', category: 'Drones' }
-];
-
-let companies = [];
-
-function loadCompanies() {
-  const stored = localStorage.getItem('tracked_companies');
-  return stored ? JSON.parse(stored) : [...DEFAULT_COMPANIES];
-}
-
-function saveCompanies() {
-  localStorage.setItem('tracked_companies', JSON.stringify(companies));
-}
-
-function initCompanies() {
-  companies = loadCompanies();
-  renderCompanies();
-}
-
-function renderCompanies() {
-  const list = document.getElementById('company-list');
-  if(!list) return;
-  list.innerHTML = '';
-  companies.forEach((c, i) => {
-    const row = document.createElement('div');
-    row.className = 'company-row';
-    row.innerHTML = `
-      <div class="company-meta">
-        <span>${c.name}</span>
-        <span class="badge">${c.category}</span>
-      </div>
-      <button class="btn-remove" onclick="removeCompany(${i})" title="Eliminar"><i class="ti ti-x"></i></button>
-    `;
-    list.appendChild(row);
-  });
-}
-
-function addCompany() {
-  const input = document.getElementById('new-company');
-  const name = input.value.trim();
-  if (!name) return;
-  if (companies.find(c => c.name.toLowerCase() === name.toLowerCase())) {
-    input.value = '';
-    return;
-  }
-  companies.push({ name, category: 'Nuevo' });
-  saveCompanies();
-  renderCompanies();
-  input.value = '';
-}
-
-function removeCompany(i) {
-  companies.splice(i, 1);
-  saveCompanies();
-  renderCompanies();
-}
-
 async function getTracking() {
   if (companies.length === 0) { alert('Añade al menos una empresa.'); return; }
   showLoading('tracking-output', 'tracking-result');
   const names = companies.map(c => c.name).join(', ');
+  const objective = document.getElementById('tracking-focus').value.trim();
 
-  const system = `Eres un agente analista de mercado corporativo. Examina hitos recientes, proyectos industriales estratégicos adjudicados y dinámicas operativas relevantes de las siguientes corporaciones tecnológicas. Genera un reporte directo en español con notas explícitas de acercamiento táctico para Moni.`;
+  let peticion = `Genera un informe estratégico de actualización enfocado en las dinámicas generales de: ${names}`;
+  if (objective) {
+    peticion = `Busca, rastrea y analiza exhaustivamente dentro de las siguientes empresas (${names}) este objetivo específico: "${objective}". Pon foco absoluto en resolver esta intención.`;
+  }
+
+  const system = `Eres un agente analista de mercado corporativo y headhunter de ingeniería. Examina hitos industriales y operacionales. 
+INSTRUCCIONES DE FORMATO:
+- Usa títulos llamativos ('##' o '###'), negritas en hitos importantes y listas ordenadas con guiones ejecutivos. No entregues bloques de texto planos.
+- Si el usuario busca ofertas, oportunidades o datos numéricos de mercado, y detectas valores estadísticos significativos o comparativas, genera un gráfico usando esta estructura exacta al final de la sección: [CHART: Título del Análisis | Item1:90%, Item2:60%]`;
 
   try {
-    const result = await callGemini(system, `Genera informe estratégico de actualización para: ${names}`);
-    document.getElementById('tracking-output').textContent = result;
+    const result = await callGemini(system, peticion);
+    // Renderizamos usando nuestro nuevo formateador visual
+    document.getElementById('tracking-output').innerHTML = parseMarkdown(result);
   } catch (e) {
     showError('tracking-output', e.message);
   }
 }
-
-function trackingToPost() {
-  const info = document.getElementById('tracking-output').textContent;
-  document.getElementById('post-idea').value = info.substring(0, 500);
-  switchPanel('post', document.querySelector('[data-panel="post"]'));
-}
-
 // ── NEW STUDY MODULE (MULTIMODAL GEMINI) ──────────────────────────────────────
 async function generateStudyMaterial() {
   const materialFile = document.getElementById('study-material').files[0];

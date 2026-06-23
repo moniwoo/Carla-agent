@@ -96,8 +96,8 @@ async function callGemini(promptText, outputElementId, resultCardId) {
   if (resultCard) resultCard.classList.remove('hidden');
   if (outputBox) outputBox.innerHTML = "<div class='loading-box'>✨ Emilia está procesando los datos en el panel...</div>";
 
-  // Usamos el modelo estable 2.5 que no da error 404
-  let targetModel = "gemini-2.5-flash";
+  // Volvemos a tu configuración favorita: 3.5 como motor principal
+  let targetModel = "gemini-3.5-flash";
   const isTechnicalStudy = outputElementId.toLowerCase().includes("tecnico") || outputElementId.toLowerCase().includes("technical") || document.querySelector('.active')?.innerText.toLowerCase().includes("técnico") || document.getElementById("estudio-tecnico")?.classList.contains("active");
 
   let enhancedPrompt = promptText;
@@ -118,6 +118,22 @@ async function callGemini(promptText, outputElementId, resultCardId) {
     });
 
     let data = await response.json();
+
+    // TU ESCUDO ORIGINAL: Si el 3.5 se satura (alta demanda), salta de inmediato al 2.5-flash
+    if (data.error && (data.error.code === 429 || data.error.message.includes("high demand") || data.error.code === 404)) {
+      console.warn("⚠️ Modelo 3.5 ocupado o no disponible. Activando Plan B con Gemini 2.5-Flash...");
+      if (outputBox) outputBox.innerHTML = "<div class='loading-box'>⏳ Servidor principal ocupado. Desviando al motor de reserva avanzado...</div>";
+      
+      targetModel = "gemini-2.5-flash";
+      url = `https://generativelanguage.googleapis.com/v1/models/${targetModel}:generateContent?key=${apiKey}`;
+      
+      response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contents: [{ parts: [{ text: enhancedPrompt }] }] })
+      });
+      data = await response.json();
+    }
 
     if (data.error) {
       console.error("Error devuelto por Google:", data.error);
@@ -176,7 +192,7 @@ async function callGemini(promptText, outputElementId, resultCardId) {
             if (!inTable) {
               inTable = true;
               htmlOutput += `<div class="table-container"><table class="visual-table"><thead><tr>`;
-              cells.forEach(cell => { htmlOutput += `<th>${cell.replace(/\*\*(.*?)\*\"/g, '<strong>$1</strong>')}</th>`; });
+              cells.forEach(cell => { htmlOutput += `<th>${cell.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}</th>`; });
               htmlOutput += `</tr></thead><tbody>`;
             } else {
               htmlOutput += `<tr>`;
@@ -206,7 +222,7 @@ async function callGemini(promptText, outputElementId, resultCardId) {
 
       if (outputBox) outputBox.innerHTML = htmlOutput;
 
-      // Renderizado matemático instantáneo con MathJax
+      // Renderizado matemático con MathJax
       if (window.MathJax && window.MathJax.typesetPromise) {
         window.MathJax.typesetPromise([outputBox]).catch((err) => console.error("Error en MathJax:", err));
       }

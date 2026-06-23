@@ -1,6 +1,24 @@
 // ==========================================
-// 1. CONTROL DE ACCESO Y API KEY
+// 1. CONTROL DE ACCESO, API KEY Y BIENVENIDA
 // ==========================================
+
+// Lista de mensajes de bienvenida dinámicos y profesionales para Moni
+const saludosEmilia = [
+  "¡Hola Moni! Diseñemos algo increíble hoy.",
+  "Bienvenida de nuevo, Moni. ¡A por todas hoy!.",
+  "¡Hola Moni! ¿Qué problema vamos a resolver hoy?",
+  "Emilia lista. Tu espacio de ingeniería e ideas está optimizado.",
+  "¡Un placer verte, Moni! Vamos a estructurar ese nuevo informe.",
+  "Bienvenida, Moni. Potenciando tus ideas con inteligencia artificial."
+];
+
+function mostrarSaludoAleatorio() {
+  const contenedorSaludo = document.getElementById("mensaje-bienvenida-principal");
+  if (contenedorSaludo) {
+    const indiceAleatorio = Math.floor(Math.random() * saludosEmilia.length);
+    contenedorSaludo.innerHTML = saludosEmilia[indiceAleatorio];
+  }
+}
 
 function getKey() {
   return localStorage.getItem('my-carla-gemini-key');
@@ -31,6 +49,9 @@ function launchApp() {
   if (overlay) overlay.style.display = 'none';
   if (appContainer) appContainer.style.display = 'flex';
   
+  // ACTIVACIÓN DEL SALUDO ALEATORIO AL ARRANCAR
+  mostrarSaludoAleatorio();
+  
   initCompanies();
 }
 
@@ -40,12 +61,14 @@ window.addEventListener('DOMContentLoaded', () => {
     launchApp();
   }
 });
-
 // ==========================================
 // 2. NAVEGACIÓN ENTRE PANELES
 // ==========================================
 
 function switchPanel(panelId, element) {
+  if (panelId === 'welcome' || panelId === 'inicio') {
+    mostrarSaludoAleatorio();
+    }
   const welcome = document.getElementById('welcome-screen');
   if (welcome) welcome.style.display = 'none';
   

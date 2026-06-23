@@ -453,3 +453,35 @@ body {
   50% { transform: scale(1.15) rotate(15deg); opacity: 1; filter: drop-shadow(0 0 10px rgba(219,39,119,0.6)); }
   100% { transform: scale(1) rotate(0deg); opacity: 0.8; filter: drop-shadow(0 0 2px rgba(219,39,119,0.2)); }
 }
+/* Estilos para embellecer las respuestas de Emilia */
+.output-h2 {
+  font-size: 1.3rem;
+  color: var(--primary-color, #4f46e5);
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  border-bottom: 1px solid #f3f4f6;
+  padding-bottom: 0.25rem;
+}
+
+.output-h3 {
+  font-size: 1.1rem;
+  color: #1f2937;
+  margin-top: 1rem;
+  margin-bottom: 0.4rem;
+  font-weight: 600;
+}
+
+.output-bullet {
+  margin-left: 0.5rem;
+  margin-y: 0.4rem;
+  line-height: 1.5;
+  display: flex;
+  align-items: flex-start;
+}
+
+.bullet-spark {
+  color: #818cf8;
+  margin-right: 0.5rem;
+  font-size: 0.9rem;
+}

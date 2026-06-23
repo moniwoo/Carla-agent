@@ -2,19 +2,20 @@
 // 1. CONTROL DE ACCESO, API KEY Y BIENVENIDA
 // ==========================================
 
-// Lista de mensajes de bienvenida dinámicos y profesionales para Moni
+// Lista de mensajes dinámicos: todos se introducen como "Soy Emilia"
 const saludosEmilia = [
-  "¡Hola Moni! Diseñemos algo increíble hoy.",
-  "Bienvenida de nuevo, Moni. ¡A por todas hoy!.",
-  "¡Hola Moni! ¿Qué problema vamos a resolver hoy?",
-  "Emilia lista. Tu espacio de ingeniería e ideas está optimizado.",
-  "¡Un placer verte, Moni! Vamos a estructurar ese nuevo informe.",
-  "Bienvenida, Moni. Potenciando tus ideas con inteligencia artificial."
+  "Soy Emilia, tu mentora de ingeniería. ¿Qué vamos a diseñar u optimizar hoy?",
+  "Soy Emilia. Tu espacio de ideas y desarrollo técnico está completamente listo.",
+  "Soy Emilia. ¿Qué problema matemático o estructural vamos a resolver ahora?",
+  "Soy Emilia, lista para potenciar tus proyectos con inteligencia artificial.",
+  "Soy Emilia. Tu panel de control e informes técnicos están optimizados.",
+  "Soy Emilia. Vamos a estructurar y dar forma a tus soluciones de ingeniería."
 ];
 
 function mostrarSaludoAleatorio() {
   const contenedorSaludo = document.getElementById("mensaje-bienvenida-principal");
   if (contenedorSaludo) {
+    // Selecciona una frase completa al azar del listado
     const indiceAleatorio = Math.floor(Math.random() * saludosEmilia.length);
     contenedorSaludo.innerHTML = saludosEmilia[indiceAleatorio];
   }

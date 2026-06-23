@@ -485,3 +485,48 @@ body {
   margin-right: 0.5rem;
   font-size: 0.9rem;
 }
+/* ==========================================
+   ESTILOS DE TABLAS EJECUTIVAS PARA EMILIA
+   ========================================== */
+
+.table-container {
+  width: 100%;
+  overflow-x: auto; /* Por si la tabla es muy ancha en el móvil, que no rompa la pantalla */
+  margin: 1.25rem 0;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.visual-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.9rem;
+}
+
+.visual-table thead {
+  background-color: #f3f4f6;
+  color: #111827;
+  font-weight: 600;
+}
+
+.visual-table th, 
+.visual-table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.visual-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Color sutil alterno para las filas para que sea súper fácil de leer */
+.visual-table tbody tr:nth-child(even) {
+  background-color: #f9fafb;
+}
+
+.visual-table th {
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+}

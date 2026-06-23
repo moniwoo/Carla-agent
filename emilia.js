@@ -23,17 +23,6 @@ function mostrarSaludoAleatorio() {
     contenedorSaludo.innerHTML = saludosMoni[indiceAleatorio];
   }
 }
-
-
-function mostrarSaludoAleatorio() {
-  const contenedorSaludo = document.getElementById("mensaje-bienvenida-principal");
-  if (contenedorSaludo) {
-    // Selecciona una frase completa al azar del listado
-    const indiceAleatorio = Math.floor(Math.random() * saludosEmilia.length);
-    contenedorSaludo.innerHTML = saludosEmilia[indiceAleatorio];
-  }
-}
-
 function getKey() {
   return localStorage.getItem('my-carla-gemini-key');
 }

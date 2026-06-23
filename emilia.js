@@ -81,7 +81,7 @@ function navigateToPanel(panelId) {
 }
 
 // ==========================================
-// 3. LLAMADA DE RED UNIFICADA (MÁXIMA ESTABILIDAD)
+// 3. LLAMADA A GEMINI
 // ==========================================
 async function callGemini(promptText, outputElementId, resultCardId) {
   const apiKey = getKey();
@@ -99,9 +99,7 @@ async function callGemini(promptText, outputElementId, resultCardId) {
   try {
     const url = "https://generativelanguage.googleapis.com/v1/models/gemini-3.5-flash:generateContent?key=" + apiKey;
 
-    // Le inyectamos una instrucción secreta al prompt del usuario para obligar a Gemini 
-    // a estructurar la respuesta con títulos claros y formato limpio que nuestro código pueda esquematizar.
-    const enhancedPrompt = promptText + "\n\n[INSTRUCCIÓN DE DISEÑO: Organiza la respuesta usando títulos con '## ' para las secciones principales. Usa viñetas claras con '- ' o '* '. Si comparas datos, usa una estructura limpia. Usa emojis para que sea muy visual, pero no inventes URLs de imágenes].";
+    const enhancedPrompt = promptText + "\n\n[INSTRUCCIÓN DE DISEÑO: Organiza la respuesta usando títulos con '## ' para las secciones principales. Usa viñetas claras con '- '. Si vas a comparar datos o mostrar parámetros estructurados, utiliza OBLIGATORIAMENTE tablas en formato Markdown clásico con encabezados separados por celdas '|'].";
 
     const response = await fetch(url, {
       method: "POST",
@@ -122,25 +120,53 @@ async function callGemini(promptText, outputElementId, resultCardId) {
     if (data.candidates && data.candidates[0].content.parts[0].text) {
       let rawText = data.candidates[0].content.parts[0].text;
       
-      // Limpieza inicial de formatos markdown de código pesados
       rawText = rawText.replace(/```[a-z]*/g, '');
 
-      // Procesamos línea por línea para crear el esquema de recuadros interactivos
       const lines = rawText.split('\n');
       let htmlOutput = "";
       let inBlock = false;
+      let inTable = false;
 
       lines.forEach(line => {
         let trimmed = line.trim();
         if (!trimmed) return;
 
-        // Si encontramos un título de sección principal (## Título)
+        // --- DETECCIÓN Y PROCESADO DE TABLAS ---
+        if (trimmed.startsWith('|')) {
+          if (trimmed.match(/^\|[ \t]*:?-+:?[ \t]*\|/)) {
+            return;
+          }
+
+          let cells = trimmed.split('|').map(c => c.trim()).filter((c, i, arr) => i > 0 && i < arr.length - 1);
+          
+          if (!inTable) {
+            inTable = true;
+            htmlOutput += `<div class="table-container"><table class="visual-table"><thead><tr>`;
+            cells.forEach(cell => {
+              htmlOutput += `<th>${cell.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}</th>`;
+            });
+            htmlOutput += `</tr></thead><tbody>`;
+          } else {
+            htmlOutput += `<tr>`;
+            cells.forEach(cell => {
+              htmlOutput += `<td>${cell.replace(/\*\frac.*?\*/g, '').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}</td>`;
+            });
+            htmlOutput += `</tr>`;
+          }
+          return;
+        } else {
+          if (inTable) {
+            htmlOutput += `</tbody></table></div>`;
+            inTable = false;
+          }
+        }
+
+        // --- PROCESADO DE SECCIONES EN RECUADROS ---
         if (trimmed.startsWith('## ')) {
           let titleText = trimmed.replace('## ', '');
           if (inBlock) {
-            htmlOutput += `</div></div>`; // Cerramos el recuadro anterior
+            htmlOutput += `</div></div>`;
           }
-          // Abrimos un recuadro visual con diseño de tarjeta ejecutiva
           htmlOutput += `<div class="visual-section-card">
                            <div class="visual-card-header">
                              <span class="visual-card-dot"></span>
@@ -149,32 +175,23 @@ async function callGemini(promptText, outputElementId, resultCardId) {
                            <div class="visual-card-body">`;
           inBlock = true;
         }
-        // Subtítulos dentro de un recuadro (### Subtítulo)
         else if (trimmed.startsWith('### ')) {
           let subTitleText = trimmed.replace('### ', '');
           htmlOutput += `<h3 class="visual-h3">${subTitleText}</h3>`;
         }
-        // Viñetas o listas esquematizadas
         else if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
-          let bulletText = trimmed.substring(2);
-          // Aplicamos negritas internas dentro de la viñeta si existen
+          let bulletText = trimmed.replace(/^[-*]\s+/, '');
           bulletText = bulletText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
           htmlOutput += `<div class="visual-bullet"><span class="visual-spark">✦</span><span>${bulletText}</span></div>`;
         }
-        // Líneas de texto plano
         else {
           let textLine = trimmed.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
           htmlOutput += `<p class="visual-p">${textLine}</p>`;
         }
       });
 
-      // Cerramos el último bloque si se quedó abierto
-      if (inBlock) {
-        htmlOutput += `</div></div>`;
-      } else {
-        // Fallback por si la respuesta no traía títulos con "##"
-        htmlOutput = rawText.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-      }
+      if (inTable) htmlOutput += `</tbody></table></div>`;
+      if (inBlock) htmlOutput += `</div></div>`;
 
       if (outputBox) outputBox.innerHTML = htmlOutput;
     } else {
@@ -185,7 +202,6 @@ async function callGemini(promptText, outputElementId, resultCardId) {
     if (outputBox) outputBox.innerHTML = "Hubo un error de red al conectar con Emilia.";
   }
 }
-
 
 // ==========================================
 // 4. FUNCIONES INTERNAS DE PANELES

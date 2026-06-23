@@ -405,7 +405,18 @@ function copyText(elementId) {
   navigator.clipboard.writeText(text).then(() => alert('¡Contenido copiado al portapapeles con éxito!'));
 }
 
-// Forzar a que cambie el saludo de bienvenida en cuanto cargue la app
+// Asegurar que se ejecute al cargar el documento
 document.addEventListener("DOMContentLoaded", () => {
   mostrarSaludoAleatorio();
 });
+
+// Plan B: Ejecutar la función repetidamente cada vez que se detecte el panel visible
+// por si el login tarda un poquito en quitarse.
+const intervaloSaluado = setInterval(() => {
+  const contenedorSaludo = document.getElementById("welcome-greeting");
+  // Si el contenedor ya existe y la app no está oculta, tiramos el saludo y limpiamos el bucle
+  if (contenedorSaludo && document.getElementById("app").style.display !== "none") {
+    mostrarSaludoAleatorio();
+    clearInterval(intervaloSaluado);
+  }
+}, 300);

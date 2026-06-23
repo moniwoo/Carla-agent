@@ -94,12 +94,19 @@ async function callGemini(promptText, outputElementId, resultCardId) {
   }
   
   if (resultCard) resultCard.classList.remove('hidden');
-  if (outputBox) outputBox.innerHTML = "<div class='loading-box'>✨ Emilia está diseñando tu panel visual...</div>";
+  if (outputBox) outputBox.innerHTML = "<div class='loading-box'>✨ Emilia está procesando los datos en el panel...</div>";
 
-  // Intentamos primero con el modelo avanzado
-  let targetModel = "gemini-3.5-flash";
-  
-  const enhancedPrompt = promptText + "\n\n[INSTRUCCIÓN DE DISEÑO: Organiza la respuesta usando títulos con '## ' para las secciones principales. Usa viñetas claras con '- '. Si vas a comparar datos o mostrar parámetros estructurados, utiliza OBLIGATORIAMENTE tablas en formato Markdown clásico con encabezados separados por celdas '|'].";
+  // Usamos el modelo estable 2.5 que no da error 404
+  let targetModel = "gemini-2.5-flash";
+  const isTechnicalStudy = outputElementId.toLowerCase().includes("tecnico") || outputElementId.toLowerCase().includes("technical") || document.querySelector('.active')?.innerText.toLowerCase().includes("técnico") || document.getElementById("estudio-tecnico")?.classList.contains("active");
+
+  let enhancedPrompt = promptText;
+
+  if (isTechnicalStudy) {
+    enhancedPrompt += "\n\n[INSTRUCCIÓN ACADÉMICA: Desarrolla el problema paso a paso con la máxima rigurosidad. Utiliza formato LaTeX clásico para las fórmulas, ecuaciones, determinantes, matrices e integrales (usa '$' para fórmulas en línea y '$$' para bloques de ecuaciones independientes). Estructura el documento usando títulos claros con '## '].";
+  } else {
+    enhancedPrompt += "\n\n[INSTRUCCIÓN DE DISEÑO: Organiza la respuesta usando títulos con '## ' para las secciones principales. Usa viñetas claras con '- '. Si vas a comparar datos, utiliza OBLIGATORIAMENTE tablas en formato Markdown clásico con celdas '|'].";
+  }
 
   try {
     let url = `https://generativelanguage.googleapis.com/v1/models/${targetModel}:generateContent?key=${apiKey}`;
@@ -111,24 +118,6 @@ async function callGemini(promptText, outputElementId, resultCardId) {
     });
 
     let data = await response.json();
-    
-    // CONTROL DE SATURACIÓN: Si el modelo 3.5 está saturado (Error 429 o mensaje de alta demanda)
-    if (data.error && (data.error.code === 429 || data.error.message.includes("high demand"))) {
-      console.warn("⚠️ Modelo 3.5 saturado. Activando Plan B con Gemini 2.5-Flash...");
-      if (outputBox) outputBox.innerHTML = "<div class='loading-box'>⏳ Servidor ocupado. Desviando a motor de reserva estable...</div>";
-      
-      // Cambiamos al modelo alternativo estable y reintentamos la petición
-      targetModel = "gemini-2.5-flash";
-      url = `https://generativelanguage.googleapis.com/v1/models/${targetModel}:generateContent?key=${apiKey}`;
-      
-      response = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ contents: [{ parts: [{ text: enhancedPrompt }] }] })
-      });
-      
-      data = await response.json();
-    }
 
     if (data.error) {
       console.error("Error devuelto por Google:", data.error);
@@ -140,81 +129,111 @@ async function callGemini(promptText, outputElementId, resultCardId) {
       let rawText = data.candidates[0].content.parts[0].text;
       rawText = rawText.replace(/```[a-z]*/g, '');
 
-      const lines = rawText.split('\n');
       let htmlOutput = "";
-      let inBlock = false;
-      let inTable = false;
 
-      lines.forEach(line => {
-        let trimmed = line.trim();
-        if (!trimmed) return;
+      // MÓDULO ESTUDIO TÉCNICO (FOLIO ACADÉMICO PARA PDF)
+      if (isTechnicalStudy) {
+        htmlOutput += `
+          <div class="pdf-control-panel no-print">
+            <button onclick="exportTechnicalToPDF()" class="btn-pdf">
+              📄 Exportar Solucionario a PDF
+            </button>
+          </div>
+          <div id="pdf-printable-area" class="academic-sheet">
+        `;
 
-        // --- PROCESADO DE TABLAS ---
-        if (trimmed.startsWith('|')) {
-          if (trimmed.match(/^\|[ \t]*:?-+:?[ \t]*\|/)) return;
+        const lines = rawText.split('\n');
+        lines.forEach(line => {
+          let trimmed = line.trim();
+          if (!trimmed) return;
 
-          let cells = trimmed.split('|').map(c => c.trim()).filter((c, i, arr) => i > 0 && i < arr.length - 1);
-          
-          if (!inTable) {
-            inTable = true;
-            htmlOutput += `<div class="table-container"><table class="visual-table"><thead><tr>`;
-            cells.forEach(cell => {
-              htmlOutput += `<th>${cell.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}</th>`;
-            });
-            htmlOutput += `</tr></thead><tbody>`;
+          if (trimmed.startsWith('## ')) {
+            htmlOutput += `<h2 class="academic-h2">${trimmed.replace('## ', '')}</h2>`;
+          } else if (trimmed.startsWith('### ')) {
+            htmlOutput += `<h3 class="academic-h3">${trimmed.replace('### ', '')}</h3>`;
+          } else if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+            htmlOutput += `<p class="academic-p">• ${trimmed.substring(2)}</p>`;
           } else {
-            htmlOutput += `<tr>`;
-            cells.forEach(cell => {
-              htmlOutput += `<td>${cell.replace(/\*\frac.*?\*/g, '').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}</td>`;
-            });
-            htmlOutput += `</tr>`;
+            htmlOutput += `<p class="academic-p">${trimmed}</p>`;
           }
-          return;
-        } else {
-          if (inTable) {
-            htmlOutput += `</tbody></table></div>`;
-            inTable = false;
+        });
+
+        htmlOutput += `</div>`;
+      } 
+      // MÓDULO GENERAL (TARJETAS VISUALES Y TABLAS)
+      else {
+        const lines = rawText.split('\n');
+        let inBlock = false;
+        let inTable = false;
+
+        lines.forEach(line => {
+          let trimmed = line.trim();
+          if (!trimmed) return;
+
+          if (trimmed.startsWith('|')) {
+            if (trimmed.match(/^\|[ \t]*:?-+:?[ \t]*\|/)) return;
+            let cells = trimmed.split('|').map(c => c.trim()).filter((c, i, arr) => i > 0 && i < arr.length - 1);
+            if (!inTable) {
+              inTable = true;
+              htmlOutput += `<div class="table-container"><table class="visual-table"><thead><tr>`;
+              cells.forEach(cell => { htmlOutput += `<th>${cell.replace(/\*\*(.*?)\*\"/g, '<strong>$1</strong>')}</th>`; });
+              htmlOutput += `</tr></thead><tbody>`;
+            } else {
+              htmlOutput += `<tr>`;
+              cells.forEach(cell => { htmlOutput += `<td>${cell.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}</td>`; });
+              htmlOutput += `</tr>`;
+            }
+            return;
+          } else {
+            if (inTable) { htmlOutput += `</tbody></table></div>`; inTable = false; }
           }
-        }
 
-        // --- PROCESADO DE RECUADROS ---
-        if (trimmed.startsWith('## ')) {
-          let titleText = trimmed.replace('## ', '');
-          if (inBlock) htmlOutput += `</div></div>`;
-          htmlOutput += `<div class="visual-section-card">
-                           <div class="visual-card-header">
-                             <span class="visual-card-dot"></span>
-                             <h2 class="visual-h2">${titleText}</h2>
-                           </div>
-                           <div class="visual-card-body">`;
-          inBlock = true;
-        }
-        else if (trimmed.startsWith('### ')) {
-          let subTitleText = trimmed.replace('### ', '');
-          htmlOutput += `<h3 class="visual-h3">${subTitleText}</h3>`;
-        }
-        else if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
-          let bulletText = trimmed.replace(/^[-*]\s+/, '');
-          bulletText = bulletText.replace(/\*\frac.*?\*/g, '').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-          htmlOutput += `<div class="visual-bullet"><span class="visual-spark">✦</span><span>${bulletText}</span></div>`;
-        }
-        else {
-          let textLine = trimmed.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-          htmlOutput += `<p class="visual-p">${textLine}</p>`;
-        }
-      });
-
-      if (inTable) htmlOutput += `</tbody></table></div>`;
-      if (inBlock) htmlOutput += `</div></div>`;
+          if (trimmed.startsWith('## ')) {
+            if (inBlock) htmlOutput += `</div></div>`;
+            htmlOutput += `<div class="visual-section-card"><div class="visual-card-header"><span class="visual-card-dot"></span><h2 class="visual-h2">${trimmed.replace('## ', '')}</h2></div><div class="visual-card-body">`;
+            inBlock = true;
+          } else if (trimmed.startsWith('### ')) {
+            htmlOutput += `<h3 class="visual-h3">${trimmed.replace('### ', '')}</h3>`;
+          } else if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+            htmlOutput += `<div class="visual-bullet"><span class="visual-spark">✦</span><span>${trimmed.replace(/^[-*]\s+/, '').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}</span></div>`;
+          } else {
+            htmlOutput += `<p class="visual-p">${trimmed.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}</p>`;
+          }
+        });
+        if (inTable) htmlOutput += `</tbody></table></div>`;
+        if (inBlock) htmlOutput += `</div></div>`;
+      }
 
       if (outputBox) outputBox.innerHTML = htmlOutput;
+
+      // Renderizado matemático instantáneo con MathJax
+      if (window.MathJax && window.MathJax.typesetPromise) {
+        window.MathJax.typesetPromise([outputBox]).catch((err) => console.error("Error en MathJax:", err));
+      }
+
     } else {
-      if (outputBox) outputBox.innerHTML = "Error: No se recibió una respuesta válida de Emilia.";
+      if (outputBox) outputBox.innerHTML = "Error: Respuesta inválida de Emilia.";
     }
   } catch (error) {
-    console.error("Fallo crítico en la conexión:", error);
+    console.error("Fallo de red crítico:", error);
     if (outputBox) outputBox.innerHTML = "Hubo un error de red al conectar con Emilia.";
   }
+}
+
+function exportTechnicalToPDF() {
+  const element = document.getElementById('pdf-printable-area');
+  if (!element) return;
+  
+  const opt = {
+    margin:       [15, 15, 15, 15],
+    filename:     'Solucionario_Academico_Emilia.pdf',
+    image:        { type: 'jpeg', quality: 0.98 },
+    html2canvas:  { scale: 2, useCORS: true, logging: false },
+    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+    pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
+  };
+  
+  html2pdf().set(opt).from(element).save();
 }
 // ==========================================
 // 4. FUNCIONES INTERNAS DE PANELES

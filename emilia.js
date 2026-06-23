@@ -404,3 +404,8 @@ function copyText(elementId) {
   const text = element.innerText || element.value;
   navigator.clipboard.writeText(text).then(() => alert('¡Contenido copiado al portapapeles con éxito!'));
 }
+
+// Forzar a que cambie el saludo de bienvenida en cuanto cargue la app
+document.addEventListener("DOMContentLoaded", () => {
+  mostrarSaludoAleatorio();
+});

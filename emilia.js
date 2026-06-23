@@ -96,21 +96,40 @@ async function callGemini(promptText, outputElementId, resultCardId) {
   if (resultCard) resultCard.classList.remove('hidden');
   if (outputBox) outputBox.innerHTML = "<div class='loading-box'>✨ Emilia está diseñando tu panel visual...</div>";
 
+  // Intentamos primero con el modelo avanzado
+  let targetModel = "gemini-3.5-flash";
+  
+  const enhancedPrompt = promptText + "\n\n[INSTRUCCIÓN DE DISEÑO: Organiza la respuesta usando títulos con '## ' para las secciones principales. Usa viñetas claras con '- '. Si vas a comparar datos o mostrar parámetros estructurados, utiliza OBLIGATORIAMENTE tablas en formato Markdown clásico con encabezados separados por celdas '|'].";
+
   try {
-    const url = "https://generativelanguage.googleapis.com/v1/models/gemini-3.5-flash:generateContent?key=" + apiKey;
+    let url = `https://generativelanguage.googleapis.com/v1/models/${targetModel}:generateContent?key=${apiKey}`;
 
-    const enhancedPrompt = promptText + "\n\n[INSTRUCCIÓN DE DISEÑO: Organiza la respuesta usando títulos con '## ' para las secciones principales. Usa viñetas claras con '- '. Si vas a comparar datos o mostrar parámetros estructurados, utiliza OBLIGATORIAMENTE tablas en formato Markdown clásico con encabezados separados por celdas '|'].";
-
-    const response = await fetch(url, {
+    let response = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: enhancedPrompt }] }]
-      })
+      body: JSON.stringify({ contents: [{ parts: [{ text: enhancedPrompt }] }] })
     });
 
-    const data = await response.json();
+    let data = await response.json();
     
+    // CONTROL DE SATURACIÓN: Si el modelo 3.5 está saturado (Error 429 o mensaje de alta demanda)
+    if (data.error && (data.error.code === 429 || data.error.message.includes("high demand"))) {
+      console.warn("⚠️ Modelo 3.5 saturado. Activando Plan B con Gemini 1.5-Flash...");
+      if (outputBox) outputBox.innerHTML = "<div class='loading-box'>⏳ Servidor ocupado. Desviando a motor de reserva estable...</div>";
+      
+      // Cambiamos al modelo alternativo estable y reintentamos la petición
+      targetModel = "gemini-1.5-flash";
+      url = `https://generativelanguage.googleapis.com/v1/models/${targetModel}:generateContent?key=${apiKey}`;
+      
+      response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contents: [{ parts: [{ text: enhancedPrompt }] }] })
+      });
+      
+      data = await response.json();
+    }
+
     if (data.error) {
       console.error("Error devuelto por Google:", data.error);
       if (outputBox) outputBox.innerHTML = "Error de Google: " + data.error.message;
@@ -119,7 +138,6 @@ async function callGemini(promptText, outputElementId, resultCardId) {
 
     if (data.candidates && data.candidates[0].content.parts[0].text) {
       let rawText = data.candidates[0].content.parts[0].text;
-      
       rawText = rawText.replace(/```[a-z]*/g, '');
 
       const lines = rawText.split('\n');
@@ -131,11 +149,9 @@ async function callGemini(promptText, outputElementId, resultCardId) {
         let trimmed = line.trim();
         if (!trimmed) return;
 
-        // --- DETECCIÓN Y PROCESADO DE TABLAS ---
+        // --- PROCESADO DE TABLAS ---
         if (trimmed.startsWith('|')) {
-          if (trimmed.match(/^\|[ \t]*:?-+:?[ \t]*\|/)) {
-            return;
-          }
+          if (trimmed.match(/^\|[ \t]*:?-+:?[ \t]*\|/)) return;
 
           let cells = trimmed.split('|').map(c => c.trim()).filter((c, i, arr) => i > 0 && i < arr.length - 1);
           
@@ -161,12 +177,10 @@ async function callGemini(promptText, outputElementId, resultCardId) {
           }
         }
 
-        // --- PROCESADO DE SECCIONES EN RECUADROS ---
+        // --- PROCESADO DE RECUADROS ---
         if (trimmed.startsWith('## ')) {
           let titleText = trimmed.replace('## ', '');
-          if (inBlock) {
-            htmlOutput += `</div></div>`;
-          }
+          if (inBlock) htmlOutput += `</div></div>`;
           htmlOutput += `<div class="visual-section-card">
                            <div class="visual-card-header">
                              <span class="visual-card-dot"></span>
@@ -181,7 +195,7 @@ async function callGemini(promptText, outputElementId, resultCardId) {
         }
         else if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
           let bulletText = trimmed.replace(/^[-*]\s+/, '');
-          bulletText = bulletText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+          bulletText = bulletText.replace(/\*\frac.*?\*/g, '').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
           htmlOutput += `<div class="visual-bullet"><span class="visual-spark">✦</span><span>${bulletText}</span></div>`;
         }
         else {
@@ -202,7 +216,6 @@ async function callGemini(promptText, outputElementId, resultCardId) {
     if (outputBox) outputBox.innerHTML = "Hubo un error de red al conectar con Emilia.";
   }
 }
-
 // ==========================================
 // 4. FUNCIONES INTERNAS DE PANELES
 // ==========================================
